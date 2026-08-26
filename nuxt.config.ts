@@ -8,7 +8,7 @@ export default defineNuxtConfig({
     spotifyRedirectUri: process.env.SPOTIFY_REDIRECT_URI,
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
     public: {
-      appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      process.env.NUXT_PUBLIC_APP_URL || "https://kcjukebox.netlify.app/",
     }
   },
   supabase: {
