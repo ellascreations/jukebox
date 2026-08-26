@@ -81,7 +81,7 @@ async function vote(id: string) {
 
 <template>
   <main class="neon-page min-h-screen">
-    <div class="mx-auto max-w-3xl px-4 py-6 sm:py-8">
+    <div class="mx-auto max-w-7xl px-4 py-6 sm:py-8">
       <header class="text-center">
         <img src="/kc-jukebox-logo.png" alt="KC Jukebox" class="neon-logo max-w-[200px]">
         <div v-if="data?.party" class="mt-3">
@@ -114,7 +114,8 @@ async function vote(id: string) {
       </section>
 
       <template v-else>
-        <section class="neon-card mt-7 p-5 sm:p-6">
+        <div class="mt-7 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+        <section class="neon-card p-5 sm:p-6">
           <div class="neon-kicker text-fuchsia-400">Request a Song</div>
           <div class="mt-4 flex flex-col gap-2 sm:flex-row">
             <input v-model="query" @keyup.enter="search" class="neon-input" placeholder="Search for a song or artist…">
@@ -130,7 +131,8 @@ async function vote(id: string) {
           </div>
         </section>
 
-        <section class="mt-7">
+        <section class="lg:sticky lg:top-6">
+          <div class="neon-card p-5 sm:p-6">
           <div class="flex items-end justify-between">
             <div><div class="neon-kicker">Guest Queue</div><h2 class="mt-1 text-2xl font-black">Up Next</h2></div>
             <div class="text-xs text-slate-600">Vote for favourites</div>
@@ -141,9 +143,11 @@ async function vote(id: string) {
               <div class="min-w-0 flex-1"><div class="truncate font-black">{{ r.track_name }}</div><div class="truncate text-sm text-slate-500">{{ r.artist_name }}</div><div class="mt-1 text-xs text-slate-600">Requested by {{ r.requested_by }}</div></div>
               <button @click="vote(r.id)" class="rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 font-black text-violet-300 transition hover:bg-violet-500/20">👍 {{ r.votes }}</button>
             </div>
-            <div v-if="!data?.requests?.length" class="neon-card border-dashed p-8 text-center text-slate-600">No requests yet. Be the first.</div>
+            <div v-if="!data?.requests?.length" class="rounded-2xl border border-dashed border-violet-500/20 bg-slate-950/30 p-8 text-center text-slate-600">No requests yet. Be the first.</div>
+          </div>
           </div>
         </section>
+        </div>
       </template>
     </div>
     <nav v-if="joined && partyActive" class="neon-bottom-nav"><div class="text-fuchsia-400">♫<br>Request</div><div>☷<br>Queue</div><div>◉<br>Party</div></nav>
