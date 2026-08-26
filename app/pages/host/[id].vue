@@ -279,6 +279,26 @@ onBeforeUnmount(() => clearInterval(timer))
         </aside>
       </div>
 
+      <section class="mx-4 mb-8 rounded-2xl border border-red-500/40 bg-red-950/20 p-5 shadow-[0_0_28px_rgba(239,68,68,0.12)] lg:mx-8">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div class="text-xs font-black uppercase tracking-[0.2em] text-red-400">HOST CONTROLS</div>
+            <h2 class="mt-1 text-xl font-black text-white">End this party</h2>
+            <p class="mt-1 max-w-2xl text-sm leading-6 text-slate-400">
+              Ending the party disables the party code and immediately stops existing guest sessions from requesting songs or voting.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="shrink-0 rounded-xl border border-red-400/70 bg-red-500/15 px-6 py-3 font-black uppercase tracking-wider text-red-200 shadow-[0_0_18px_rgba(239,68,68,0.2)] transition hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="endingParty"
+            @click="endParty"
+          >
+            {{ endingParty ? 'ENDING PARTY…' : '⏻ END PARTY' }}
+          </button>
+        </div>
+      </section>
+
       <footer class="kc-footer">♔ &nbsp; KC Jukebox — Powered by Spotify</footer>
     </section>
   </main>
