@@ -14,7 +14,7 @@ onMounted(async()=>{if(route.query.spotify==='not-premium') error.value='That Sp
   <div class="neon-shell">
     <header class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex items-center gap-4"><img src="/kc-jukebox-logo.png" class="w-24 sm:w-28" alt="KC Jukebox"><div><div class="neon-kicker">Host Control Centre</div><h1 class="neon-title mt-1 text-3xl sm:text-4xl">Host Dashboard</h1><p class="mt-1 text-sm text-slate-500">{{ status?.host?.display_name || user?.user_metadata?.display_name || user?.email }}</p></div></div>
-      <button class="neon-btn-ghost" @click="signOut">Sign Out</button>
+      <div class="flex gap-2"><NuxtLink v-if="status?.host?.role==='superadmin'" to="/admin" class="neon-btn-cyan">Super Admin</NuxtLink><button class="neon-btn-ghost" @click="signOut">Sign Out</button></div>
     </header>
 
     <div v-if="error" class="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300">{{ error }}</div>

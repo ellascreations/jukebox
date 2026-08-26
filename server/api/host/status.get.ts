@@ -16,7 +16,8 @@ export default defineEventHandler(async (event) => {
     host: {
       id: user.id,
       email: user.email,
-      display_name: user.user_metadata?.display_name || user.user_metadata?.name || null
+      display_name: (user as any).hostProfile?.display_name || user.user_metadata?.display_name || user.user_metadata?.name || null,
+      role: (user as any).hostProfile?.role || 'host'
     }
   }
 })
