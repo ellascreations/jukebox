@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const code = ref('')
+const user = useSupabaseUser()
 function join(){ if(code.value.trim()) navigateTo(`/party/${code.value.trim().toUpperCase()}`) }
 </script>
 <template>
@@ -9,7 +10,8 @@ function join(){ if(code.value.trim()) navigateTo(`/party/${code.value.trim().to
       <h1 class="text-5xl font-black tracking-tight sm:text-7xl">Party Jukebox</h1>
       <p class="mx-auto mt-5 max-w-2xl text-lg text-slate-400">Host the music. Let your guests scan, search, request and vote for what plays next.</p>
       <div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
-        <NuxtLink to="/host" class="btn-primary">Host a Party</NuxtLink>
+        <NuxtLink :to="user ? '/host' : '/host/signup'" class="btn-primary">{{ user ? 'Host Dashboard' : 'Become a Host' }}</NuxtLink>
+        <NuxtLink v-if="!user" to="/host/login" class="btn-secondary">Host Sign In</NuxtLink>
       </div>
       <div class="glass mx-auto mt-12 max-w-xl rounded-3xl p-6 text-left">
         <label class="mb-2 block text-sm font-bold text-slate-300">Joining a party?</label>

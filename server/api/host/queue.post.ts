@@ -1,8 +1,9 @@
-import { requireHostId } from '../../utils/host'
+import { requireHostUser } from '../../utils/host'
 import { useAdminSupabase } from '../../utils/adminSupabase'
 import { spotifyFetch } from '../../utils/spotify'
 export default defineEventHandler(async (event) => {
-  const hostId = requireHostId(event)
+  const user = await requireHostUser(event)
+  const hostId = user.id
   const body = await readBody(event)
   const db = useAdminSupabase()
   const { data: party } = await db.from('parties').select('id,spotify_connection_id').eq('id',body.party_id).eq('host_id',hostId).single()

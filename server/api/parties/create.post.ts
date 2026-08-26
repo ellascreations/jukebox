@@ -1,10 +1,11 @@
 import crypto from 'node:crypto'
-import { requireHostId } from '../../utils/host'
+import { requireHostUser } from '../../utils/host'
 import { useAdminSupabase } from '../../utils/adminSupabase'
 
 function code() { return crypto.randomBytes(4).toString('base64url').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6).padEnd(6,'X') }
 export default defineEventHandler(async (event) => {
-  const hostId = requireHostId(event)
+  const user = await requireHostUser(event)
+  const hostId = user.id
   const body = await readBody(event)
   if (!body?.name?.trim()) throw createError({ statusCode: 400, statusMessage: 'Party name is required' })
   const db = useAdminSupabase()
