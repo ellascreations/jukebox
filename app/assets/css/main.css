@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #__nuxt { min-height: 100%; }
+body { @apply bg-slate-950 text-white antialiased; }
+.glass { @apply border border-white/10 bg-white/5 backdrop-blur-xl; }
+.btn-primary { @apply rounded-xl bg-green-500 px-5 py-3 font-bold text-slate-950 transition hover:bg-green-400 disabled:opacity-50; }
+.btn-secondary { @apply rounded-xl border border-white/15 bg-white/5 px-4 py-2 font-semibold transition hover:bg-white/10; }
+.input { @apply w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-green-500; }
