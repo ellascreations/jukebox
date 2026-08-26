@@ -2,11 +2,12 @@
 const { data: status, refresh } = await useFetch('/api/host/status')
 const name = ref('')
 const maxRequests = ref(3)
+const queueMode = ref<'automatic' | 'approval'>('automatic')
 const creating = ref(false)
 const error = ref('')
 async function createParty(){
   creating.value=true; error.value=''
-  try { const p:any = await $fetch('/api/parties/create',{method:'POST',body:{name:name.value,max_requests_per_guest:maxRequests.value}}); await navigateTo(`/host/${p.id}?code=${p.code}`) }
+  try { const p:any = await $fetch('/api/parties/create',{method:'POST',body:{name:name.value,max_requests_per_guest:maxRequests.value,queue_mode:queueMode.value}}); await navigateTo(`/host/${p.id}?code=${p.code}`) }
   catch(e:any){ error.value=e?.data?.statusMessage || e?.message || 'Could not create party' }
   finally{ creating.value=false }
 }
@@ -23,7 +24,7 @@ async function createParty(){
     </div>
     <div v-if="status?.connected" class="glass mt-5 rounded-3xl p-6">
       <h2 class="text-xl font-bold">2. Create your party</h2>
-      <div class="mt-5 space-y-4"><div><label class="mb-2 block text-sm font-bold text-slate-300">Party name</label><input v-model="name" class="input" placeholder="Saturday Night Party"></div><div><label class="mb-2 block text-sm font-bold text-slate-300">Maximum active requests per guest</label><input v-model.number="maxRequests" class="input" min="1" max="10" type="number"></div><div v-if="error" class="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-red-300">{{error}}</div><button :disabled="creating || !name.trim()" @click="createParty" class="btn-primary">{{ creating ? 'Creating…' : 'Start Party' }}</button></div>
+      <div class="mt-5 space-y-4"><div><label class="mb-2 block text-sm font-bold text-slate-300">Party name</label><input v-model="name" class="input" placeholder="Saturday Night Party"></div><div><label class="mb-2 block text-sm font-bold text-slate-300">Maximum active requests per guest</label><input v-model.number="maxRequests" class="input" min="1" max="10" type="number"></div><div><label class="mb-2 block text-sm font-bold text-slate-300">Guest request mode</label><div class="grid gap-3 sm:grid-cols-2"><button type="button" @click="queueMode='automatic'" class="rounded-2xl border p-4 text-left transition" :class="queueMode==='automatic' ? 'border-green-400 bg-green-500/10' : 'border-white/10 bg-white/5'"><div class="font-black">Automatic</div><div class="mt-1 text-sm text-slate-400">Guest requests go straight into the Spotify queue.</div></button><button type="button" @click="queueMode='approval'" class="rounded-2xl border p-4 text-left transition" :class="queueMode==='approval' ? 'border-green-400 bg-green-500/10' : 'border-white/10 bg-white/5'"><div class="font-black">Approval</div><div class="mt-1 text-sm text-slate-400">Guest requests wait for the host to press Add Next.</div></button></div></div><div v-if="error" class="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-red-300">{{error}}</div><button :disabled="creating || !name.trim()" @click="createParty" class="btn-primary">{{ creating ? 'Creating…' : 'Start Party' }}</button></div>
     </div>
   </div>
 </main>

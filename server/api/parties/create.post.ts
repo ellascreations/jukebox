@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
     if (!data) break
     partyCode = code()
   }
-  const { data, error } = await db.from('parties').insert({ host_id: hostId, spotify_connection_id: connection.id, name: body.name.trim(), code: partyCode, status: 'active', max_requests_per_guest: Number(body.max_requests_per_guest || 3) }).select().single()
+  const { data, error } = await db.from('parties').insert({ host_id: hostId, spotify_connection_id: connection.id, name: body.name.trim(), code: partyCode, status: 'active', max_requests_per_guest: Number(body.max_requests_per_guest || 3), queue_mode: body.queue_mode === 'automatic' ? 'automatic' : 'approval' }).select().single()
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })
   return data
 })
