@@ -1,5 +1,5 @@
 import { requireHostUser } from '../../utils/host'
-import { adminSupabase } from '../../utils/adminSupabase'
+import { useAdminSupabase } from '../../utils/adminSupabase'
 
 export default defineEventHandler(async (event) => {
   const host = await requireHostUser(event)
@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Party id is required' })
   }
 
-  const db = adminSupabase()
+  const db = useAdminSupabase()
   const { data: party, error } = await db
     .from('parties')
     .select('id,name,code,status,queue_mode,max_requests_per_guest,created_at,ended_at,host_id')
