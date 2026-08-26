@@ -4,7 +4,7 @@ import QRCode from 'qrcode'
 
 const route = useRoute()
 const partyId = String(route.params.id)
-const code = String(route.query.code || '')
+const routeCode = String(route.query.code || '')
 const config = useRuntimeConfig()
 const { hostFetch } = useHostApi()
 
@@ -14,7 +14,11 @@ const party = ref<any>(null)
 const requests = ref<any[]>([])
 const busy = ref<string | null>(null)
 const endingParty = ref(false)
+const reactivatingParty = ref(false)
 const error = ref('')
+
+const code = computed(() => String(party.value?.code || routeCode || ''))
+const isEnded = computed(() => party.value?.status === 'ended')
 
 const progressPercent = computed(() => {
   const duration = Number(playback.value?.item?.duration_ms || 0)
@@ -31,10 +35,23 @@ function formatTime(ms: number) {
 }
 
 async function load() {
-  if (code) {
+  try {
+    const result: any = await hostFetch('/api/host/party', { query: { party_id: partyId } })
+    party.value = result.party
+  } catch (e: any) {
+    error.value = e?.data?.statusMessage || e?.statusMessage || 'Could not load this party.'
+    return
+  }
+
+  if (party.value?.status === 'ended') {
+    playback.value = null
+    requests.value = []
+    return
+  }
+
+  if (code.value) {
     try {
-      const data: any = await $fetch(`/api/parties/${code}`)
-      party.value = data.party
+      const data: any = await $fetch(`/api/parties/${code.value}`)
       requests.value = data.requests || []
     } catch {}
   }
@@ -81,6 +98,29 @@ async function endParty() {
   }
 }
 
+
+async function reactivateParty() {
+  if (!confirm('Reactivate this party? A new party code will be generated and all previous guest sessions will remain invalid.')) return
+
+  reactivatingParty.value = true
+  error.value = ''
+  try {
+    const result: any = await hostFetch('/api/host/reactivate-party', {
+      method: 'POST',
+      body: { party_id: partyId }
+    })
+    party.value = result.party
+
+    const url = `${String(config.public.appUrl).replace(/\/$/, '')}/party/${result.party.code}`
+    qr.value = await QRCode.toDataURL(url, { width: 360, margin: 1 })
+    await load()
+  } catch (e: any) {
+    error.value = e?.data?.statusMessage || e?.statusMessage || 'Could not reactivate the party.'
+  } finally {
+    reactivatingParty.value = false
+  }
+}
+
 async function skip() {
   error.value = ''
   try {
@@ -93,8 +133,8 @@ async function skip() {
 
 let timer: any
 onMounted(async () => {
-  if (code) {
-    const url = `${String(config.public.appUrl).replace(/\/$/, '')}/party/${code}`
+  if (code.value) {
+    const url = `${String(config.public.appUrl).replace(/\/$/, '')}/party/${code.value}`
     qr.value = await QRCode.toDataURL(url, { width: 360, margin: 1 })
   }
   await load()
@@ -128,7 +168,7 @@ onBeforeUnmount(() => clearInterval(timer))
           <span class="kc-nav-icon">⌗</span>
           <span>Party Code</span>
         </a>
-        <button type="button" class="kc-nav-item text-left text-red-400" :disabled="endingParty" @click="endParty">
+        <button v-if="!isEnded" type="button" class="kc-nav-item text-left text-red-400" :disabled="endingParty" @click="endParty">
           <span class="kc-nav-icon">⏻</span>
           <span>{{ endingParty ? 'Ending Party…' : 'End Party' }}</span>
         </button>
@@ -145,7 +185,8 @@ onBeforeUnmount(() => clearInterval(timer))
         <div>
           <div class="flex flex-wrap items-center gap-3">
             <h1 class="text-2xl font-black sm:text-3xl">{{ party?.name || 'Party Jukebox' }}</h1>
-            <span class="kc-active-pill"><span class="kc-active-dot"></span>ACTIVE</span>
+            <span v-if="!isEnded" class="kc-active-pill"><span class="kc-active-dot"></span>ACTIVE</span>
+            <span v-else class="rounded-full border border-red-500/40 bg-red-500/10 px-3 py-1 text-xs font-black uppercase tracking-wider text-red-300">ENDED</span>
           </div>
           <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
             <span>{{ party?.queue_mode === 'automatic' ? 'Automatic queue' : 'Host approval' }}</span>
@@ -156,7 +197,7 @@ onBeforeUnmount(() => clearInterval(timer))
 
         <div class="flex flex-wrap items-center gap-3">
           <div class="kc-code-chip">Party Code: <strong>{{ code }}</strong></div>
-          <button type="button" class="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2 font-bold text-red-300 transition hover:bg-red-500/20 disabled:opacity-50" :disabled="endingParty" @click="endParty">
+          <button v-if="!isEnded" type="button" class="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2 font-bold text-red-300 transition hover:bg-red-500/20 disabled:opacity-50" :disabled="endingParty" @click="endParty">
             {{ endingParty ? 'Ending…' : 'End Party' }}
           </button>
           <NuxtLink to="/host" class="btn-secondary">Dashboard</NuxtLink>
@@ -167,7 +208,44 @@ onBeforeUnmount(() => clearInterval(timer))
         {{ error }}
       </div>
 
-      <div class="kc-content">
+      <section v-if="isEnded" class="mx-4 mt-6 rounded-2xl border border-fuchsia-500/40 bg-fuchsia-950/10 p-6 text-center shadow-[0_0_36px_rgba(217,70,239,0.14)] lg:mx-8 lg:p-10">
+        <div class="text-xs font-black uppercase tracking-[0.25em] text-red-400">PARTY ENDED</div>
+        <h2 class="mt-3 text-3xl font-black text-white">{{ party?.name }}</h2>
+        <p class="mx-auto mt-3 max-w-2xl text-slate-400">
+          This party is currently closed. You can reuse it whenever you like by reactivating it below.
+        </p>
+
+        <div class="mx-auto mt-6 grid max-w-2xl gap-4 sm:grid-cols-2">
+          <div class="rounded-2xl border border-white/10 bg-black/20 p-5">
+            <div class="text-xs font-bold uppercase tracking-widest text-slate-500">Previous Party Code</div>
+            <div class="mt-2 text-3xl font-black tracking-[0.2em] text-slate-300">{{ code }}</div>
+            <div class="mt-2 text-xs text-slate-600">This code is inactive.</div>
+          </div>
+
+          <div class="rounded-2xl border border-cyan-500/25 bg-cyan-500/5 p-5 text-left">
+            <div class="text-xs font-black uppercase tracking-widest text-cyan-300">Reuse this party</div>
+            <p class="mt-2 text-sm leading-6 text-slate-400">
+              Reactivating generates a new party code and QR code, clears any stale active queue items, and keeps old guest sessions locked out.
+            </p>
+          </div>
+        </div>
+
+        <div v-if="party?.ended_at" class="mt-4 text-xs text-slate-600">Ended {{ new Date(party.ended_at).toLocaleString() }}</div>
+
+        <div class="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+          <button
+            type="button"
+            class="neon-btn-cyan inline-flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="reactivatingParty"
+            @click="reactivateParty"
+          >
+            {{ reactivatingParty ? 'REACTIVATING…' : '⚡ REACTIVATE PARTY' }}
+          </button>
+          <NuxtLink to="/host" class="btn-secondary inline-flex items-center justify-center">Back to Host Dashboard</NuxtLink>
+        </div>
+      </section>
+
+      <div v-else class="kc-content">
         <section id="now-playing" class="kc-now-card">
           <div class="kc-section-label">NOW PLAYING</div>
           <div class="kc-now-layout">
@@ -279,7 +357,7 @@ onBeforeUnmount(() => clearInterval(timer))
         </aside>
       </div>
 
-      <section class="mx-4 mb-8 rounded-2xl border border-red-500/40 bg-red-950/20 p-5 shadow-[0_0_28px_rgba(239,68,68,0.12)] lg:mx-8">
+      <section v-if="!isEnded" class="mx-4 mb-8 rounded-2xl border border-red-500/40 bg-red-950/20 p-5 shadow-[0_0_28px_rgba(239,68,68,0.12)] lg:mx-8">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div class="text-xs font-black uppercase tracking-[0.2em] text-red-400">HOST CONTROLS</div>
