@@ -13,6 +13,7 @@ const playback = ref<any>(null)
 const party = ref<any>(null)
 const requests = ref<any[]>([])
 const busy = ref<string | null>(null)
+const endingParty = ref(false)
 const error = ref('')
 
 const progressPercent = computed(() => {
@@ -58,6 +59,25 @@ async function sendToSpotify(request: any) {
     error.value = e?.data?.statusMessage || e?.statusMessage || 'Could not add that request to Spotify.'
   } finally {
     busy.value = null
+  }
+}
+
+
+async function endParty() {
+  if (!confirm('End this party? The party code and all existing guest sessions will stop accepting requests and votes.')) return
+
+  endingParty.value = true
+  error.value = ''
+  try {
+    await hostFetch('/api/host/end-party', {
+      method: 'POST',
+      body: { party_id: partyId }
+    })
+    await navigateTo('/host')
+  } catch (e: any) {
+    error.value = e?.data?.statusMessage || e?.statusMessage || 'Could not end the party.'
+  } finally {
+    endingParty.value = false
   }
 }
 
@@ -108,6 +128,10 @@ onBeforeUnmount(() => clearInterval(timer))
           <span class="kc-nav-icon">⌗</span>
           <span>Party Code</span>
         </a>
+        <button type="button" class="kc-nav-item text-left text-red-400" :disabled="endingParty" @click="endParty">
+          <span class="kc-nav-icon">⏻</span>
+          <span>{{ endingParty ? 'Ending Party…' : 'End Party' }}</span>
+        </button>
       </nav>
 
       <div class="kc-sidebar-footer">
@@ -132,6 +156,9 @@ onBeforeUnmount(() => clearInterval(timer))
 
         <div class="flex flex-wrap items-center gap-3">
           <div class="kc-code-chip">Party Code: <strong>{{ code }}</strong></div>
+          <button type="button" class="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2 font-bold text-red-300 transition hover:bg-red-500/20 disabled:opacity-50" :disabled="endingParty" @click="endParty">
+            {{ endingParty ? 'Ending…' : 'End Party' }}
+          </button>
           <NuxtLink to="/host" class="btn-secondary">Dashboard</NuxtLink>
         </div>
       </header>
