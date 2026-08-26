@@ -8,3 +8,59 @@ body { @apply bg-slate-950 text-white antialiased; }
 .btn-primary { @apply rounded-xl bg-green-500 px-5 py-3 font-bold text-slate-950 transition hover:bg-green-400 disabled:opacity-50; }
 .btn-secondary { @apply rounded-xl border border-white/15 bg-white/5 px-4 py-2 font-semibold transition hover:bg-white/10; }
 .input { @apply w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-green-500; }
+
+/* KC Jukebox host dashboard */
+.kc-host-shell { @apply min-h-screen bg-[#05070b] text-white lg:grid lg:grid-cols-[270px_1fr]; }
+.kc-sidebar { @apply hidden border-r border-white/10 bg-[#05070b] lg:flex lg:min-h-screen lg:flex-col; }
+.kc-brand-wrap { @apply flex justify-center px-5 pb-5 pt-7; }
+.kc-logo { @apply w-full max-w-[220px] object-contain; filter: drop-shadow(0 0 22px rgba(168,85,247,.22)); }
+.kc-nav { @apply mt-2 space-y-2 px-4; }
+.kc-nav-item { @apply flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-white; }
+.kc-nav-primary { @apply border border-violet-500/30 bg-violet-500/10 text-white; box-shadow: inset 0 0 24px rgba(139,92,246,.08); }
+.kc-nav-icon { @apply grid w-6 place-items-center text-lg; }
+.kc-sidebar-footer { @apply mt-auto border-t border-white/5 px-7 py-6 text-center; }
+.kc-main { @apply min-w-0; }
+.kc-topbar { @apply flex flex-col gap-4 border-b border-white/10 px-4 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-8; }
+.kc-active-pill { @apply inline-flex items-center gap-2 text-xs font-black text-green-400; }
+.kc-active-dot { @apply h-2 w-2 rounded-full bg-green-400; box-shadow: 0 0 12px rgba(74,222,128,.9); }
+.kc-code-chip { @apply rounded-xl border border-violet-500/30 bg-violet-500/5 px-4 py-2 text-sm text-violet-300; }
+.kc-content { @apply grid gap-5 p-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(280px,.65fr)] lg:p-8; }
+.kc-now-card, .kc-control-card, .kc-queue-card, .kc-party-card { @apply rounded-2xl border border-white/10 bg-[#0a0e15]; box-shadow: 0 16px 50px rgba(0,0,0,.22); }
+.kc-now-card { @apply p-5 sm:p-6; }
+.kc-control-card { @apply p-5 sm:p-6; }
+.kc-section-label { @apply text-xs font-black uppercase tracking-[.16em] text-cyan-400; }
+.kc-section-label.purple { @apply text-violet-400; }
+.kc-section-label.cyan { @apply text-cyan-400; }
+.kc-now-layout { @apply mt-5 flex flex-col gap-5 sm:flex-row sm:items-center; }
+.kc-album-wrap { @apply shrink-0; }
+.kc-album-art, .kc-album-placeholder { @apply h-36 w-36 rounded-xl border border-white/10 object-cover sm:h-44 sm:w-44; }
+.kc-album-placeholder { @apply grid place-items-center bg-black/30 text-6xl text-slate-800; }
+.kc-progress { @apply h-full rounded-full bg-cyan-400; box-shadow: 0 0 14px rgba(34,211,238,.45); }
+.kc-control-icon { @apply text-4xl text-violet-400; text-shadow: 0 0 18px rgba(168,85,247,.5); }
+.kc-skip-btn { @apply w-full rounded-xl border border-violet-400/40 bg-violet-500/10 px-4 py-3 font-black text-violet-300 transition hover:bg-violet-500/20; }
+.kc-device-box { @apply rounded-xl border border-white/10 bg-black/20 p-4; }
+.kc-queue-card { @apply overflow-hidden; }
+.kc-queue-head { @apply flex flex-col gap-3 border-b border-white/10 px-5 py-5 sm:flex-row sm:items-center sm:justify-between; }
+.kc-mode-pill { @apply rounded-lg border px-3 py-2 text-xs font-black tracking-wide; }
+.kc-mode-pill.automatic { @apply border-cyan-500/30 bg-cyan-500/5 text-cyan-400; }
+.kc-mode-pill.approval { @apply border-violet-500/30 bg-violet-500/5 text-violet-300; }
+.kc-queue-list { @apply divide-y divide-white/5; }
+.kc-queue-row { @apply flex items-center gap-3 px-4 py-4 transition hover:bg-white/[.025] sm:gap-4 sm:px-5; }
+.kc-vote-count { @apply w-8 shrink-0 text-center text-xl font-black text-violet-400; }
+.kc-track-thumb { @apply h-14 w-14 shrink-0 rounded-lg object-cover sm:h-16 sm:w-16; }
+.kc-track-placeholder { @apply grid place-items-center bg-black/30 text-2xl text-slate-700; }
+.kc-row-action { @apply ml-auto flex shrink-0 items-center; }
+.kc-status { @apply rounded-lg border px-3 py-2 text-xs font-black; }
+.kc-status.playing { @apply border-violet-500/30 bg-violet-500/10 text-violet-300; }
+.kc-status.queued { @apply border-green-500/30 bg-green-500/10 text-green-400; }
+.kc-add-btn { @apply rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs font-black text-green-400 transition hover:bg-green-500/20 disabled:opacity-50; }
+.kc-retry-btn { @apply rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-300 transition hover:bg-amber-500/20 disabled:opacity-50; }
+.kc-party-card { @apply self-start p-5 sm:p-6; }
+.kc-qr { @apply mx-auto mt-5 w-full max-w-[245px] rounded-xl bg-white p-3; }
+.kc-big-code { @apply mt-5 text-center text-3xl font-black tracking-[.22em] text-violet-400; text-shadow: 0 0 20px rgba(168,85,247,.25); }
+.kc-footer { @apply border-t border-white/10 px-6 py-5 text-center text-sm text-slate-500; }
+
+@media (max-width: 640px) {
+  .kc-row-action { @apply max-w-[120px]; }
+  .kc-status, .kc-add-btn, .kc-retry-btn { @apply text-center text-[11px]; }
+}

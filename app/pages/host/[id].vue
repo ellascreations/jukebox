@@ -2,68 +2,257 @@
 definePageMeta({ middleware: 'host-auth' })
 import QRCode from 'qrcode'
 
-const route=useRoute()
-const partyId=String(route.params.id)
-const code=String(route.query.code||'')
-const config=useRuntimeConfig()
+const route = useRoute()
+const partyId = String(route.params.id)
+const code = String(route.query.code || '')
+const config = useRuntimeConfig()
 const { hostFetch } = useHostApi()
-const qr=ref('')
-const playback=ref<any>(null)
-const party=ref<any>(null)
-const requests=ref<any[]>([])
-const busy=ref<string|null>(null)
-const error=ref('')
-const notice=ref('')
 
-async function load(){
-  if(code){
+const qr = ref('')
+const playback = ref<any>(null)
+const party = ref<any>(null)
+const requests = ref<any[]>([])
+const busy = ref<string | null>(null)
+const error = ref('')
+
+const progressPercent = computed(() => {
+  const duration = Number(playback.value?.item?.duration_ms || 0)
+  const progress = Number(playback.value?.progress_ms || 0)
+  if (!duration) return 0
+  return Math.min(100, Math.max(0, (progress / duration) * 100))
+})
+
+function formatTime(ms: number) {
+  const totalSeconds = Math.floor((Number(ms) || 0) / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = String(totalSeconds % 60).padStart(2, '0')
+  return `${minutes}:${seconds}`
+}
+
+async function load() {
+  if (code) {
     try {
-      const d:any=await $fetch(`/api/parties/${code}`)
-      party.value=d.party
-      requests.value=d.requests
+      const data: any = await $fetch(`/api/parties/${code}`)
+      party.value = data.party
+      requests.value = data.requests || []
     } catch {}
   }
-  try{
-    playback.value=await hostFetch('/api/host/playback',{query:{party_id:partyId}})
-  }catch(e:any){
+
+  try {
+    playback.value = await hostFetch('/api/host/playback', { query: { party_id: partyId } })
+  } catch (e: any) {
     if (e?.statusCode === 403) error.value = 'This party belongs to another host account.'
   }
 }
-async function sendToSpotify(r:any){busy.value=r.id; try{await hostFetch('/api/host/queue',{method:'POST',body:{party_id:partyId,request_id:r.id}}); await load()}finally{busy.value=null}}
-async function skip(){await hostFetch('/api/host/skip',{method:'POST',body:{party_id:partyId}}); setTimeout(load,700)}
-async function removeRequest(r:any){
-  const alreadySent = r.status === 'sent_to_spotify'
-  const message = alreadySent
-    ? `Remove \"${r.track_name}\" from the jukebox queue? Spotify may still play it because it has already been sent to Spotify.`
-    : `Remove \"${r.track_name}\" from the queue?`
-  if (!confirm(message)) return
-  busy.value=`remove-${r.id}`
-  notice.value=''
+
+async function sendToSpotify(request: any) {
+  busy.value = request.id
+  error.value = ''
   try {
-    const result:any = await hostFetch('/api/host/request-remove',{method:'POST',body:{party_id:partyId,request_id:r.id}})
-    notice.value = result?.message || 'Request removed.'
+    await hostFetch('/api/host/queue', {
+      method: 'POST',
+      body: { party_id: partyId, request_id: request.id }
+    })
     await load()
-  } catch (e:any) {
-    error.value = e?.data?.statusMessage || e?.statusMessage || 'Could not remove request.'
+  } catch (e: any) {
+    error.value = e?.data?.statusMessage || e?.statusMessage || 'Could not add that request to Spotify.'
   } finally {
-    busy.value=null
+    busy.value = null
   }
 }
-let timer:any
-onMounted(async()=>{
-  const url=`${String(config.public.appUrl).replace(/\/$/,'')}/party/${code}`
-  qr.value=await QRCode.toDataURL(url,{width:360,margin:1})
+
+async function skip() {
+  error.value = ''
+  try {
+    await hostFetch('/api/host/skip', { method: 'POST', body: { party_id: partyId } })
+    setTimeout(load, 700)
+  } catch (e: any) {
+    error.value = e?.data?.statusMessage || e?.statusMessage || 'Could not skip the current track.'
+  }
+}
+
+let timer: any
+onMounted(async () => {
+  if (code) {
+    const url = `${String(config.public.appUrl).replace(/\/$/, '')}/party/${code}`
+    qr.value = await QRCode.toDataURL(url, { width: 360, margin: 1 })
+  }
   await load()
-  timer=setInterval(load,3000)
+  timer = setInterval(load, 3000)
 })
-onBeforeUnmount(()=>clearInterval(timer))
+
+onBeforeUnmount(() => clearInterval(timer))
 </script>
-<template><main class="min-h-screen p-4 lg:p-8"><div class="mx-auto max-w-7xl">
-  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><div class="text-sm font-bold uppercase tracking-widest text-green-400">HOST MODE · {{code}}</div><div v-if="party" class="mt-2 inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold uppercase tracking-wider text-slate-300">{{ party.queue_mode === 'automatic' ? 'Automatic queue' : 'Host approval' }}</div><h1 class="mt-1 text-4xl font-black">{{party?.name || 'Party Jukebox'}}</h1></div><NuxtLink to="/host" class="btn-secondary">Host Dashboard</NuxtLink></div>
-  <div v-if="error" class="mt-5 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300">{{ error }}</div><div v-if="notice" class="mt-5 rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-green-300">{{ notice }}</div>
-  <div class="mt-7 grid gap-5 lg:grid-cols-[1.35fr_.65fr]">
-    <section class="glass overflow-hidden rounded-3xl"><div class="grid min-h-[440px] md:grid-cols-[.8fr_1.2fr]"><div class="bg-black/30"><img v-if="playback?.item?.image" :src="playback.item.image" class="h-full min-h-[300px] w-full object-cover"><div v-else class="grid h-full min-h-[300px] place-items-center text-8xl text-slate-800">♫</div></div><div class="flex flex-col justify-between p-7"><div><div class="text-sm font-bold uppercase tracking-widest text-slate-500">Now Playing</div><h2 class="mt-3 text-4xl font-black">{{playback?.item?.name || 'Start Spotify playback'}}</h2><p class="mt-2 text-xl text-slate-400">{{playback?.item?.artist || 'Choose a Spotify Connect device'}}</p><p v-if="playback?.device" class="mt-5 text-sm text-slate-500">Playing on {{playback.device.name}}</p></div><button @click="skip" class="btn-primary mt-8 self-start">Skip Track →</button></div></div></section>
-    <aside class="glass rounded-3xl p-6 text-center"><h2 class="text-2xl font-black">Request a Song</h2><p class="mt-2 text-slate-400">Scan with your phone</p><img v-if="qr" :src="qr" class="mx-auto mt-5 w-full max-w-[300px] rounded-2xl bg-white p-3"><div class="mt-5 text-4xl font-black tracking-[.25em] text-green-400">{{code}}</div></aside>
-  </div>
-  <section class="mt-6"><div class="flex items-center justify-between"><h2 class="text-2xl font-black">Guest Queue</h2><span class="text-sm text-slate-500">Highest votes first</span></div><div class="mt-4 grid gap-3"><div v-for="r in requests" :key="r.id" class="glass flex items-center gap-4 rounded-2xl p-3"><div class="w-10 text-center text-xl font-black text-slate-500">{{r.votes}}</div><img v-if="r.image_url" :src="r.image_url" class="h-16 w-16 rounded-xl object-cover"><div class="min-w-0 flex-1"><div class="truncate font-bold">{{r.track_name}}</div><div class="truncate text-sm text-slate-400">{{r.artist_name}} · requested by {{r.requested_by}}</div></div><div class="flex items-center gap-2"><span v-if="r.status==='playing'" class="rounded-full bg-cyan-500/15 px-3 py-2 text-sm font-bold text-cyan-300">Now Playing</span><span v-else-if="r.status==='sent_to_spotify'" class="rounded-full bg-green-500/15 px-3 py-2 text-sm font-bold text-green-400">Queued in Spotify</span><button v-else-if="party?.queue_mode !== 'automatic'" @click="sendToSpotify(r)" :disabled="busy===r.id || busy===`remove-${r.id}`" class="btn-primary whitespace-nowrap">{{busy===r.id?'Adding…':'Add Next'}}</button><button v-else @click="sendToSpotify(r)" :disabled="busy===r.id || busy===`remove-${r.id}`" class="btn-secondary whitespace-nowrap">{{busy===r.id?'Retrying…':'Retry Spotify'}}</button><button v-if="r.status!=='playing'" @click="removeRequest(r)" :disabled="busy===`remove-${r.id}` || busy===r.id" class="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-300 transition hover:bg-red-500/20 disabled:opacity-50">{{busy===`remove-${r.id}`?'Removing…':'Remove'}}</button></div></div><div v-if="!requests.length" class="rounded-3xl border border-dashed border-white/10 p-12 text-center text-slate-500">Guest requests will appear here.</div></div></section>
-</div></main></template>
+
+<template>
+  <main class="kc-host-shell">
+    <aside class="kc-sidebar">
+      <div class="kc-brand-wrap">
+        <img src="/kc-jukebox-logo.png" alt="KC Jukebox" class="kc-logo" />
+      </div>
+
+      <nav class="kc-nav">
+        <NuxtLink to="/host" class="kc-nav-item kc-nav-primary">
+          <span class="kc-nav-icon">⌂</span>
+          <span>Host Dashboard</span>
+        </NuxtLink>
+        <a href="#now-playing" class="kc-nav-item">
+          <span class="kc-nav-icon">♫</span>
+          <span>Now Playing</span>
+        </a>
+        <a href="#guest-queue" class="kc-nav-item">
+          <span class="kc-nav-icon">☷</span>
+          <span>Guest Queue</span>
+        </a>
+        <a href="#party-code" class="kc-nav-item">
+          <span class="kc-nav-icon">⌗</span>
+          <span>Party Code</span>
+        </a>
+      </nav>
+
+      <div class="kc-sidebar-footer">
+        <div class="font-bold text-slate-300">KC Jukebox</div>
+        <div class="mt-1 text-xs text-slate-600">Play it. Love it. Party to it.</div>
+      </div>
+    </aside>
+
+    <section class="kc-main">
+      <header class="kc-topbar">
+        <div>
+          <div class="flex flex-wrap items-center gap-3">
+            <h1 class="text-2xl font-black sm:text-3xl">{{ party?.name || 'Party Jukebox' }}</h1>
+            <span class="kc-active-pill"><span class="kc-active-dot"></span>ACTIVE</span>
+          </div>
+          <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+            <span>{{ party?.queue_mode === 'automatic' ? 'Automatic queue' : 'Host approval' }}</span>
+            <span>•</span>
+            <span>Spotify powered</span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="kc-code-chip">Party Code: <strong>{{ code }}</strong></div>
+          <NuxtLink to="/host" class="btn-secondary">Dashboard</NuxtLink>
+        </div>
+      </header>
+
+      <div v-if="error" class="mx-4 mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300 lg:mx-8">
+        {{ error }}
+      </div>
+
+      <div class="kc-content">
+        <section id="now-playing" class="kc-now-card">
+          <div class="kc-section-label">NOW PLAYING</div>
+          <div class="kc-now-layout">
+            <div class="kc-album-wrap">
+              <img v-if="playback?.item?.image" :src="playback.item.image" class="kc-album-art" alt="Album artwork" />
+              <div v-else class="kc-album-placeholder">♫</div>
+            </div>
+
+            <div class="min-w-0 flex-1">
+              <h2 class="truncate text-3xl font-black sm:text-4xl">
+                {{ playback?.item?.name || 'Start Spotify playback' }}
+              </h2>
+              <p class="mt-2 truncate text-lg text-slate-400 sm:text-xl">
+                {{ playback?.item?.artist || 'Choose a Spotify Connect device' }}
+              </p>
+
+              <div v-if="playback?.device" class="mt-4 flex items-center gap-2 text-sm text-green-400">
+                <span>▣</span>
+                <span>Playing on {{ playback.device.name }}</span>
+              </div>
+
+              <div class="mt-7">
+                <div class="h-1.5 overflow-hidden rounded-full bg-slate-800">
+                  <div class="kc-progress" :style="{ width: `${progressPercent}%` }"></div>
+                </div>
+                <div class="mt-2 flex justify-between text-xs text-slate-500">
+                  <span>{{ formatTime(playback?.progress_ms || 0) }}</span>
+                  <span>{{ formatTime(playback?.item?.duration_ms || 0) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="kc-control-card">
+          <div class="kc-control-icon">⏭</div>
+          <h2 class="mt-3 text-xl font-black">Host Playback</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-500">
+            Spotify controls the active device and audio. Skip moves to the next Spotify track.
+          </p>
+          <button @click="skip" class="kc-skip-btn mt-6">Skip Track →</button>
+
+          <div v-if="playback?.device" class="kc-device-box mt-5">
+            <div class="text-xs font-bold uppercase tracking-widest text-slate-500">Active device</div>
+            <div class="mt-1 font-bold text-slate-200">{{ playback.device.name }}</div>
+            <div v-if="playback.device.volume_percent != null" class="mt-1 text-sm text-slate-500">Volume {{ playback.device.volume_percent }}%</div>
+          </div>
+        </aside>
+
+        <section id="guest-queue" class="kc-queue-card">
+          <div class="kc-queue-head">
+            <div>
+              <div class="kc-section-label purple">GUEST QUEUE</div>
+              <p class="mt-1 text-sm text-slate-500">Highest votes first</p>
+            </div>
+            <div class="kc-mode-pill" :class="party?.queue_mode === 'automatic' ? 'automatic' : 'approval'">
+              {{ party?.queue_mode === 'automatic' ? '⚡ AUTOMATIC MODE' : '✓ APPROVAL MODE' }}
+            </div>
+          </div>
+
+          <div class="kc-queue-list">
+            <article v-for="request in requests" :key="request.id" class="kc-queue-row">
+              <div class="kc-vote-count">{{ request.votes }}</div>
+              <img v-if="request.image_url" :src="request.image_url" class="kc-track-thumb" alt="" />
+              <div v-else class="kc-track-thumb kc-track-placeholder">♫</div>
+
+              <div class="min-w-0 flex-1">
+                <div class="truncate text-base font-black sm:text-lg">{{ request.track_name }}</div>
+                <div class="truncate text-sm text-slate-400">{{ request.artist_name }}</div>
+                <div class="mt-1 truncate text-xs text-slate-600">Requested by {{ request.requested_by }}</div>
+              </div>
+
+              <div class="kc-row-action">
+                <span v-if="request.status === 'playing'" class="kc-status playing">Now Playing</span>
+                <span v-else-if="request.status === 'sent_to_spotify'" class="kc-status queued">Queued in Spotify</span>
+                <button
+                  v-else-if="party?.queue_mode !== 'automatic'"
+                  @click="sendToSpotify(request)"
+                  :disabled="busy === request.id"
+                  class="kc-add-btn"
+                >
+                  {{ busy === request.id ? 'Adding…' : 'Add Next' }}
+                </button>
+                <button
+                  v-else
+                  @click="sendToSpotify(request)"
+                  :disabled="busy === request.id"
+                  class="kc-retry-btn"
+                >
+                  {{ busy === request.id ? 'Retrying…' : 'Retry Spotify' }}
+                </button>
+              </div>
+            </article>
+
+            <div v-if="!requests.length" class="p-12 text-center text-slate-600">
+              Guest requests will appear here.
+            </div>
+          </div>
+        </section>
+
+        <aside id="party-code" class="kc-party-card">
+          <div class="kc-section-label cyan">REQUEST A SONG</div>
+          <p class="mt-2 text-sm text-slate-500">Guests scan this code with their phone.</p>
+          <img v-if="qr" :src="qr" class="kc-qr" alt="Party QR code" />
+          <div class="kc-big-code">{{ code }}</div>
+          <div class="mt-4 rounded-xl border border-white/10 bg-black/20 p-3 text-center text-xs text-slate-500">
+            {{ party?.queue_mode === 'automatic' ? 'Guest requests queue automatically in Spotify.' : 'Guest requests wait for host approval.' }}
+          </div>
+        </aside>
+      </div>
+
+      <footer class="kc-footer">♔ &nbsp; KC Jukebox — Powered by Spotify</footer>
+    </section>
+  </main>
+</template>
