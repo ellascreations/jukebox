@@ -10,6 +10,13 @@ const searching = ref(false)
 const message = ref('')
 
 const { data, refresh } = await useFetch(`/api/parties/${code}`)
+const { data: playback, refresh: refreshPlayback } = await useFetch(`/api/parties/${code}/playback`)
+const playbackProgress = computed(() => {
+  const duration = Number(playback.value?.item?.duration_ms || 0)
+  const progress = Number(playback.value?.progress_ms || 0)
+  if (!duration) return 0
+  return Math.min(100, Math.max(0, (progress / duration) * 100))
+})
 const partyEnded = computed(() => data.value?.party?.status === 'ended')
 const partyActive = computed(() => data.value?.party?.status === 'active')
 
@@ -21,7 +28,12 @@ watch(partyEnded, (ended) => {
 }, { immediate: true })
 
 let timer: any
-onMounted(() => { timer = setInterval(() => refresh(), 3000) })
+onMounted(() => {
+  timer = setInterval(() => {
+    refresh()
+    refreshPlayback()
+  }, 3000)
+})
 onBeforeUnmount(() => clearInterval(timer))
 
 async function join() {
@@ -114,7 +126,30 @@ async function vote(id: string) {
       </section>
 
       <template v-else>
-        <div class="mt-7 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+        <section class="neon-card mt-7 p-4 sm:p-5">
+          <div class="flex items-center gap-4">
+            <div class="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-cyan-400/20 bg-slate-950 sm:h-20 sm:w-20">
+              <img v-if="playback?.item?.image" :src="playback.item.image" :alt="playback.item.name" class="h-full w-full object-cover">
+              <div v-else class="flex h-full w-full items-center justify-center text-2xl text-cyan-300">♫</div>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="h-2.5 w-2.5 rounded-full" :class="playback?.is_playing ? 'bg-green-400 shadow-[0_0_12px_rgba(74,222,128,.9)]' : 'bg-slate-600'"></span>
+                <div class="neon-kicker text-cyan-300">Now Playing</div>
+              </div>
+              <template v-if="playback?.item">
+                <div class="mt-1 truncate text-lg font-black text-white sm:text-xl">{{ playback.item.name }}</div>
+                <div class="truncate text-sm text-slate-400">{{ playback.item.artist }}</div>
+                <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-800">
+                  <div class="h-full rounded-full bg-gradient-to-r from-fuchsia-500 via-violet-500 to-cyan-400 transition-all duration-500" :style="{ width: `${playbackProgress}%` }"></div>
+                </div>
+              </template>
+              <div v-else class="mt-1 text-sm text-slate-500">Nothing is playing right now.</div>
+            </div>
+          </div>
+        </section>
+
+        <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
         <section class="neon-card p-5 sm:p-6">
           <div class="neon-kicker text-fuchsia-400">Request a Song</div>
           <div class="mt-4 flex flex-col gap-2 sm:flex-row">
