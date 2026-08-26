@@ -4,19 +4,28 @@ const user = useSupabaseUser()
 function join(){ if(code.value.trim()) navigateTo(`/party/${code.value.trim().toUpperCase()}`) }
 </script>
 <template>
-  <main class="min-h-screen grid place-items-center px-4 py-12 bg-[radial-gradient(circle_at_top,_rgba(34,197,94,.16),_transparent_35%)]">
+  <main class="neon-page grid place-items-center px-4 py-10">
     <div class="w-full max-w-4xl text-center">
-      <div class="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-3xl bg-green-500 text-4xl">♫</div>
-      <h1 class="text-5xl font-black tracking-tight sm:text-7xl">Party Jukebox</h1>
-      <p class="mx-auto mt-5 max-w-2xl text-lg text-slate-400">Host the music. Let your guests scan, search, request and vote for what plays next.</p>
-      <div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
-        <NuxtLink :to="user ? '/host' : '/host/signup'" class="btn-primary">{{ user ? 'Host Dashboard' : 'Become a Host' }}</NuxtLink>
-        <NuxtLink v-if="!user" to="/host/login" class="btn-secondary">Host Sign In</NuxtLink>
+      <img src="/kc-jukebox-logo.png" alt="KC Jukebox" class="neon-logo max-w-[300px]" />
+      <p class="neon-kicker mt-4">Play it. Love it. Party to it.</p>
+      <h1 class="neon-title mt-4 text-4xl sm:text-6xl">Your party. Their requests. Your Spotify.</h1>
+      <p class="mx-auto mt-5 max-w-2xl text-lg text-slate-400">Create a party, display the QR code and let guests request and vote from their phones.</p>
+
+      <div class="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+        <NuxtLink :to="user ? '/host' : '/host/signup'" class="neon-btn">{{ user ? 'Host Dashboard' : 'Become a Host' }}</NuxtLink>
+        <NuxtLink v-if="!user" to="/host/login" class="neon-btn-cyan">Host Sign In</NuxtLink>
       </div>
-      <div class="glass mx-auto mt-12 max-w-xl rounded-3xl p-6 text-left">
-        <label class="mb-2 block text-sm font-bold text-slate-300">Joining a party?</label>
-        <div class="flex gap-3"><input v-model="code" @keyup.enter="join" class="input uppercase" maxlength="6" placeholder="PARTY CODE"><button @click="join" class="btn-secondary">Join</button></div>
-      </div>
+
+      <section class="neon-card mx-auto mt-10 max-w-xl p-6 text-left sm:p-8">
+        <div class="text-center">
+          <div class="neon-cyan text-sm font-black uppercase tracking-[.18em]">Join a Party</div>
+          <p class="mt-2 text-sm text-slate-500">Enter the six-character code shown by your host.</p>
+        </div>
+        <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+          <input v-model="code" @keyup.enter="join" class="neon-input text-center uppercase tracking-[.18em] sm:text-left" maxlength="6" placeholder="PARTY CODE">
+          <button @click="join" class="neon-btn whitespace-nowrap">Join Party</button>
+        </div>
+      </section>
     </div>
   </main>
 </template>

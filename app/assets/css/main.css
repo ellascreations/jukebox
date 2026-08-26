@@ -64,3 +64,33 @@ body { @apply bg-slate-950 text-white antialiased; }
   .kc-row-action { @apply max-w-[120px]; }
   .kc-status, .kc-add-btn, .kc-retry-btn { @apply text-center text-[11px]; }
 }
+
+/* Shared neon KC Jukebox theme */
+.neon-page { @apply min-h-screen text-white; background:
+  radial-gradient(circle at 18% 12%, rgba(34,211,238,.10), transparent 28%),
+  radial-gradient(circle at 82% 0%, rgba(236,72,153,.10), transparent 30%),
+  radial-gradient(circle at 50% 100%, rgba(139,92,246,.12), transparent 36%),
+  #030611; }
+.neon-shell { @apply mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8; }
+.neon-logo { @apply mx-auto w-full max-w-[240px] object-contain; filter: drop-shadow(0 0 24px rgba(236,72,153,.22)) drop-shadow(0 0 18px rgba(34,211,238,.16)); }
+.neon-card { @apply rounded-3xl border border-fuchsia-500/25 bg-[#070b16]/95 backdrop-blur-xl; box-shadow: 0 0 0 1px rgba(34,211,238,.05), 0 18px 60px rgba(0,0,0,.38), inset 0 0 35px rgba(139,92,246,.04); }
+.neon-card-cyan { @apply rounded-3xl border border-cyan-500/25 bg-[#070b16]/95; box-shadow: 0 0 24px rgba(34,211,238,.07), 0 18px 60px rgba(0,0,0,.34); }
+.neon-title { @apply font-black tracking-tight text-white; text-shadow: 0 0 22px rgba(236,72,153,.18); }
+.neon-kicker { @apply text-xs font-black uppercase tracking-[.2em] text-cyan-400; }
+.neon-pink { @apply text-fuchsia-400; text-shadow: 0 0 16px rgba(236,72,153,.4); }
+.neon-cyan { @apply text-cyan-400; text-shadow: 0 0 16px rgba(34,211,238,.35); }
+.neon-input { @apply w-full rounded-xl border border-violet-500/30 bg-black/30 px-4 py-3 text-white outline-none placeholder:text-slate-600 transition focus:border-fuchsia-400; box-shadow: inset 0 0 18px rgba(139,92,246,.035); }
+.neon-btn { @apply rounded-xl border border-fuchsia-400/50 bg-fuchsia-500/10 px-5 py-3 font-black text-fuchsia-200 transition disabled:cursor-not-allowed disabled:opacity-50; box-shadow: 0 0 18px rgba(236,72,153,.08), inset 0 0 16px rgba(236,72,153,.05); }
+.neon-btn:hover { background: rgba(236,72,153,.18); box-shadow: 0 0 24px rgba(236,72,153,.16), inset 0 0 20px rgba(236,72,153,.08); }
+.neon-btn-cyan { @apply rounded-xl border border-cyan-400/50 bg-cyan-500/10 px-5 py-3 font-black text-cyan-200 transition disabled:cursor-not-allowed disabled:opacity-50; box-shadow: 0 0 18px rgba(34,211,238,.08); }
+.neon-btn-cyan:hover { background: rgba(34,211,238,.18); box-shadow: 0 0 24px rgba(34,211,238,.16); }
+.neon-btn-ghost { @apply rounded-xl border border-white/10 bg-white/[.03] px-4 py-3 font-bold text-slate-200 transition hover:border-violet-400/30 hover:bg-violet-500/10; }
+.neon-divider { @apply border-t border-white/10; }
+.neon-mode { @apply rounded-2xl border p-4 text-left transition; }
+.neon-mode.active-auto { @apply border-cyan-400 bg-cyan-500/10; box-shadow: 0 0 24px rgba(34,211,238,.10); }
+.neon-mode.active-approval { @apply border-fuchsia-400 bg-fuchsia-500/10; box-shadow: 0 0 24px rgba(236,72,153,.10); }
+.neon-mode.inactive { @apply border-white/10 bg-white/[.025] hover:border-violet-400/30; }
+.neon-track { @apply flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.025] p-3 transition hover:border-violet-500/30 hover:bg-violet-500/[.06]; }
+.neon-code { @apply text-center text-4xl font-black tracking-[.18em] text-fuchsia-400; text-shadow: 0 0 26px rgba(236,72,153,.48); }
+.neon-bottom-nav { @apply sticky bottom-0 z-20 grid grid-cols-3 border-t border-fuchsia-500/20 bg-[#050814]/95 backdrop-blur-xl; box-shadow: 0 -12px 40px rgba(0,0,0,.3); }
+.neon-bottom-nav > div { @apply px-2 py-3 text-center text-xs font-bold text-slate-400; }
