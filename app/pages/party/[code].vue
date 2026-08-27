@@ -28,13 +28,30 @@ watch(partyEnded, (ended) => {
 }, { immediate: true })
 
 let timer: any
+let heartbeatTimer: any
+
+async function heartbeat() {
+  if (!joined.value || !guestToken.value || !partyActive.value) return
+  try {
+    await $fetch('/api/parties/heartbeat', {
+      method: 'POST',
+      body: { guest_token: guestToken.value }
+    })
+  } catch {}
+}
+
 onMounted(() => {
+  heartbeat()
   timer = setInterval(() => {
     refresh()
     refreshPlayback()
   }, 3000)
+  heartbeatTimer = setInterval(heartbeat, 10000)
 })
-onBeforeUnmount(() => clearInterval(timer))
+onBeforeUnmount(() => {
+  clearInterval(timer)
+  clearInterval(heartbeatTimer)
+})
 
 async function join() {
   message.value = ''
@@ -45,6 +62,7 @@ async function join() {
     })
     guestToken.value = g.guest_token
     joined.value = true
+    await heartbeat()
   } catch (e: any) {
     message.value = e?.data?.statusMessage || e?.statusMessage || 'Could not join this party.'
     await refresh()

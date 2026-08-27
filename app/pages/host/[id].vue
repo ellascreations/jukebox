@@ -12,6 +12,8 @@ const qr = ref('')
 const playback = ref<any>(null)
 const party = ref<any>(null)
 const requests = ref<any[]>([])
+const guests = ref<any[]>([])
+const onlineGuests = ref(0)
 const busy = ref<string | null>(null)
 const endingParty = ref(false)
 const reactivatingParty = ref(false)
@@ -19,6 +21,17 @@ const error = ref('')
 
 const code = computed(() => String(party.value?.code || routeCode || ''))
 const isEnded = computed(() => party.value?.status === 'ended')
+
+function formatLastSeen(value: string | null) {
+  if (!value) return 'Never'
+  const seconds = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000))
+  if (seconds < 10) return 'now'
+  if (seconds < 60) return `${seconds}s ago`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  return `${hours}h ago`
+}
 
 const progressPercent = computed(() => {
   const duration = Number(playback.value?.item?.duration_ms || 0)
@@ -46,6 +59,8 @@ async function load() {
   if (party.value?.status === 'ended') {
     playback.value = null
     requests.value = []
+    guests.value = []
+    onlineGuests.value = 0
     return
   }
 
@@ -55,6 +70,13 @@ async function load() {
       requests.value = data.requests || []
     } catch {}
   }
+
+
+  try {
+    const guestData: any = await hostFetch('/api/host/guests', { query: { party_id: partyId } })
+    guests.value = guestData.guests || []
+    onlineGuests.value = Number(guestData.online_count || 0)
+  } catch {}
 
   try {
     playback.value = await hostFetch('/api/host/playback', { query: { party_id: partyId } })
@@ -186,6 +208,7 @@ onBeforeUnmount(() => clearInterval(timer))
           <div class="flex flex-wrap items-center gap-3">
             <h1 class="text-2xl font-black sm:text-3xl">{{ party?.name || 'Party Jukebox' }}</h1>
             <span v-if="!isEnded" class="kc-active-pill"><span class="kc-active-dot"></span>ACTIVE</span>
+            <span v-if="!isEnded" class="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-black uppercase tracking-wider text-cyan-300">👥 {{ onlineGuests }} Online</span>
             <span v-else class="rounded-full border border-red-500/40 bg-red-500/10 px-3 py-1 text-xs font-black uppercase tracking-wider text-red-300">ENDED</span>
           </div>
           <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
@@ -356,6 +379,40 @@ onBeforeUnmount(() => clearInterval(timer))
           </div>
         </aside>
       </div>
+
+
+      <section v-if="!isEnded" class="mx-4 mb-6 rounded-2xl border border-cyan-500/20 bg-slate-950/50 p-5 shadow-[0_0_28px_rgba(34,211,238,0.08)] lg:mx-8">
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div class="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">CONNECTED GUESTS</div>
+            <h2 class="mt-1 text-xl font-black text-white">{{ onlineGuests }} online now</h2>
+          </div>
+          <div class="text-xs text-slate-500">Online = active within 30 seconds</div>
+        </div>
+
+        <div v-if="guests.length" class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <article v-for="guest in guests" :key="guest.id" class="rounded-xl border border-white/10 bg-black/20 p-4">
+            <div class="flex items-center justify-between gap-3">
+              <div class="min-w-0 flex items-center gap-3">
+                <span class="h-3 w-3 shrink-0 rounded-full" :class="guest.online ? 'bg-green-400 shadow-[0_0_12px_rgba(74,222,128,.9)]' : 'bg-slate-600'"></span>
+                <div class="min-w-0">
+                  <div class="truncate font-black text-white">{{ guest.display_name }}</div>
+                  <div class="mt-1 text-xs" :class="guest.online ? 'text-green-300' : 'text-slate-500'">
+                    {{ guest.online ? 'Online' : `Last active ${formatLastSeen(guest.last_seen_at)}` }}
+                  </div>
+                </div>
+              </div>
+              <div class="shrink-0 rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-xs font-black text-violet-300">
+                {{ guest.request_count }} req
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div v-else class="mt-4 rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-600">
+          No guests have joined this party yet.
+        </div>
+      </section>
 
       <section v-if="!isEnded" class="mx-4 mb-8 rounded-2xl border border-red-500/40 bg-red-950/20 p-5 shadow-[0_0_28px_rgba(239,68,68,0.12)] lg:mx-8">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
