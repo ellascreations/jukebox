@@ -25,7 +25,7 @@ function join(){ if(code.value.trim()) navigateTo(`/party/${code.value.trim().to
           <input v-model="code" @keyup.enter="join" class="neon-input text-center uppercase tracking-[.18em] sm:text-left" maxlength="6" placeholder="PARTY CODE">
           <button @click="join" class="neon-btn whitespace-nowrap">Join Party</button>
         </div>
-      </section>
+      </section><div class="mx-auto mt-7 max-w-2xl text-xs leading-5 text-slate-600"><strong class="text-slate-500">Private use only.</strong> KC Jukebox is intended for private, personal and non-commercial gatherings and does not grant public-performance or commercial music rights. <NuxtLink to="/terms" class="font-bold text-cyan-500">Terms of Use</NuxtLink></div>
     </div>
   </main>
 </template>

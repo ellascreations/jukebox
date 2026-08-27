@@ -1,9 +1,10 @@
 <script setup lang="ts">
 const supabase = useSupabaseClient()
 const name = ref(''); const email = ref(''); const password = ref(''); const confirmPassword = ref('')
-const loading = ref(false); const error = ref(''); const message = ref('')
+const loading = ref(false); const error = ref(''); const message = ref(''); const acceptedPrivateUse = ref(false)
 async function signUp() {
   error.value=''; message.value=''
+  if(!acceptedPrivateUse.value) return error.value='Please accept the private-use terms before creating an account.'
   if(password.value.length<8) return error.value='Password must be at least 8 characters.'
   if(password.value!==confirmPassword.value) return error.value='Passwords do not match.'
   loading.value=true
@@ -25,7 +26,7 @@ async function signUp() {
         <div><label class="mb-2 block text-sm font-bold text-slate-300">Display name</label><input v-model="name" class="neon-input" required></div>
         <div><label class="mb-2 block text-sm font-bold text-slate-300">Email address</label><input v-model="email" class="neon-input" type="email" autocomplete="email" required></div>
         <div><label class="mb-2 block text-sm font-bold text-slate-300">Password</label><input v-model="password" class="neon-input" type="password" autocomplete="new-password" required></div>
-        <div><label class="mb-2 block text-sm font-bold text-slate-300">Confirm password</label><input v-model="confirmPassword" class="neon-input" type="password" autocomplete="new-password" required></div>
+        <div><label class="mb-2 block text-sm font-bold text-slate-300">Confirm password</label><input v-model="confirmPassword" class="neon-input" type="password" autocomplete="new-password" required></div><label class="flex items-start gap-3 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4 text-sm text-slate-300"><input v-model="acceptedPrivateUse" type="checkbox" class="mt-1 h-4 w-4 accent-cyan-400" required><span>I understand that KC Jukebox is for <strong class="text-white">private, personal and non-commercial gatherings only</strong>. I am responsible for complying with Spotify's terms and applicable music licensing requirements. <NuxtLink to="/terms" class="font-bold text-cyan-400">Read the Terms of Use</NuxtLink>.</span></label>
         <div v-if="error" class="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{{ error }}</div>
         <div v-if="message" class="rounded-xl border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-300">{{ message }}</div>
         <button class="neon-btn w-full" :disabled="loading">{{ loading ? 'Creating…' : 'Create Account' }}</button>

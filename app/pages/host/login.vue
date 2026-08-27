@@ -27,7 +27,7 @@ async function signIn() {
         <button class="neon-btn w-full" :disabled="loading">{{ loading ? 'Signing in…' : 'Sign In' }}</button>
       </form>
       <p class="mt-6 text-center text-sm text-slate-500">Need a host account? <NuxtLink to="/host/signup" class="font-bold text-fuchsia-400">Create one</NuxtLink></p>
-    </section>
+    </section><p class="mt-5 text-center text-xs leading-5 text-slate-600">Private, personal and non-commercial use only. <NuxtLink to="/terms" class="font-bold text-cyan-500">Terms of Use</NuxtLink></p>
   </div>
 </main>
 </template>
