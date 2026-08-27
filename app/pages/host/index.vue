@@ -2,9 +2,10 @@
 definePageMeta({ middleware: 'host-auth' })
 const supabase = useSupabaseClient(); const user = useSupabaseUser(); const { hostFetch } = useHostApi()
 const status=ref<any>(null); const parties=ref<any[]>([]); const name=ref(''); const maxRequests=ref(3); const queueMode=ref<'automatic'|'approval'>('automatic')
-const creating=ref(false); const connecting=ref(false); const error=ref(''); const route=useRoute()
-async function load(){try{status.value=await hostFetch('/api/host/status'); const data:any=await hostFetch('/api/host/parties'); parties.value=data.parties||[]}catch(e:any){if(e?.statusCode!==401) error.value=e?.data?.statusMessage||e?.message||'Could not load host account'}}
+const creating=ref(false); const connecting=ref(false); const requestingSpotifyAccess=ref(false); const spotifyAccessEmail=ref(''); const error=ref(''); const route=useRoute()
+async function load(){try{status.value=await hostFetch('/api/host/status'); spotifyAccessEmail.value=status.value?.spotifyAccess?.spotify_email||user.value?.email||''; const data:any=await hostFetch('/api/host/parties'); parties.value=data.parties||[]}catch(e:any){if(e?.statusCode!==401) error.value=e?.data?.statusMessage||e?.message||'Could not load host account'}}
 async function connectSpotify(){connecting.value=true; error.value=''; try{const result:any=await hostFetch('/api/spotify/login'); window.location.assign(result.url)}catch(e:any){error.value=e?.data?.statusMessage||e?.message||'Could not start Spotify connection'; connecting.value=false}}
+async function requestSpotifyAccess(){requestingSpotifyAccess.value=true; error.value=''; try{await hostFetch('/api/host/spotify-access',{method:'POST',body:{spotify_email:spotifyAccessEmail.value}}); await load()}catch(e:any){error.value=e?.data?.statusMessage||e?.message||'Could not request Spotify access'}finally{requestingSpotifyAccess.value=false}}
 async function createParty(){creating.value=true; error.value=''; try{const p:any=await hostFetch('/api/parties/create',{method:'POST',body:{name:name.value,max_requests_per_guest:maxRequests.value,queue_mode:queueMode.value}}); await navigateTo(`/host/${p.id}?code=${p.code}`)}catch(e:any){error.value=e?.data?.statusMessage||e?.message||'Could not create party'}finally{creating.value=false}}
 async function signOut(){await supabase.auth.signOut(); await navigateTo('/')}
 onMounted(async()=>{
@@ -37,7 +38,23 @@ onMounted(async()=>{
       <section class="neon-card-cyan p-6">
         <div class="flex items-start justify-between gap-4"><div><div class="neon-kicker">Spotify Premium</div><h2 class="mt-2 text-2xl font-black">Your Music Account</h2></div><div class="text-3xl">◉</div></div>
         <div v-if="status?.connected" class="mt-6 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"><div><div class="text-sm text-slate-500">Connected account</div><div class="mt-1 text-lg font-black">{{ status.connection?.display_name || 'Spotify Host' }}</div><div class="mt-2 inline-flex rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1 text-xs font-black uppercase tracking-wider text-green-400">Premium Connected</div></div><button class="neon-btn-cyan" @click="connectSpotify" :disabled="connecting">{{ connecting?'Connecting…':'Change Spotify' }}</button></div>
-        <div v-else class="mt-6"><p class="text-slate-400">Connect your own Spotify Premium account. Its active player and queue will power your parties.</p><button @click="connectSpotify" :disabled="connecting" class="neon-btn-cyan mt-5">{{connecting?'Connecting…':'Connect Spotify'}}</button></div>
+        <div v-else class="mt-6">
+          <div v-if="status?.spotifyAccess?.status==='approved'">
+            <p class="text-slate-400">Spotify host access is approved. Connect the Spotify Premium account approved by the KC Jukebox administrator.</p>
+            <div class="mt-3 rounded-xl border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-300">Approved for {{ status.spotifyAccess.spotify_email }}</div>
+            <button @click="connectSpotify" :disabled="connecting" class="neon-btn-cyan mt-5">{{connecting?'Connecting…':'Connect Spotify'}}</button>
+          </div>
+          <div v-else-if="status?.spotifyAccess?.status==='pending'">
+            <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4"><div class="font-black text-amber-300">Spotify Access Pending</div><p class="mt-2 text-sm text-slate-400">Your request for <span class="font-bold text-white">{{ status.spotifyAccess.spotify_email }}</span> is waiting for Super Admin approval.</p></div>
+          </div>
+          <div v-else>
+            <p class="text-slate-400">KC Jukebox currently uses Spotify Development Mode. Request access for the email address used by your Spotify account before connecting.</p>
+            <label class="mb-2 mt-4 block text-sm font-bold text-slate-300">Spotify account email</label>
+            <input v-model="spotifyAccessEmail" type="email" class="neon-input" placeholder="you@example.com">
+            <button @click="requestSpotifyAccess" :disabled="requestingSpotifyAccess||!spotifyAccessEmail.trim()" class="neon-btn-cyan mt-4">{{requestingSpotifyAccess?'Sending…':'Request Spotify Access'}}</button>
+            <p v-if="status?.spotifyAccess?.status==='denied'" class="mt-3 text-sm text-red-300">Your previous request was denied. You can submit a new request with the correct Spotify email.</p>
+          </div>
+        </div>
       </section>
 
       <section class="neon-card p-6">

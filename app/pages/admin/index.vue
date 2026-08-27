@@ -6,6 +6,8 @@ const supabase = useSupabaseClient()
 
 const hosts = ref<any[]>([])
 const activeParties = ref<any[]>([])
+const spotifyAccessRequests = ref<any[]>([])
+const spotifyAccessSummary = ref<any>({ approved: 0, pending: 0, development_limit: 5 })
 const loading = ref(true)
 const error = ref('')
 const busy = ref('')
@@ -18,6 +20,8 @@ async function load() {
     const r:any = await hostFetch('/api/admin/overview')
     hosts.value = r.hosts || []
     activeParties.value = r.activeParties || []
+    spotifyAccessRequests.value = r.spotifyAccessRequests || []
+    spotifyAccessSummary.value = r.spotifyAccessSummary || { approved: 0, pending: 0, development_limit: 5 }
   } catch (e:any) {
     error.value = e?.data?.statusMessage || e?.message || 'Could not load Super Admin'
   } finally {
@@ -37,6 +41,23 @@ async function updateHost(h:any, patch:any) {
     await load()
   } catch (e:any) {
     error.value = e?.data?.statusMessage || e?.message || 'Could not update host'
+  } finally {
+    busy.value = ''
+  }
+}
+
+
+async function reviewSpotifyAccess(request:any, status:string) {
+  busy.value = `spotify-${request.host_id}`
+  error.value = ''
+  try {
+    await hostFetch('/api/admin/spotify-access', {
+      method: 'PATCH',
+      body: { host_id: request.host_id, status }
+    })
+    await load()
+  } catch (e:any) {
+    error.value = e?.data?.statusMessage || e?.message || 'Could not update Spotify access'
   } finally {
     busy.value = ''
   }
@@ -140,6 +161,22 @@ onMounted(load)
                 Open Party View
               </NuxtLink>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="neon-card mt-7 overflow-hidden">
+        <div class="flex flex-col gap-4 border-b border-white/10 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div><div class="neon-kicker">Spotify Development Mode</div><h2 class="mt-1 text-2xl font-black">Spotify Host Access</h2><p class="mt-2 text-sm text-slate-500">Add an approved host's Spotify email manually in Spotify Developer Dashboard → Users Management, then approve the request here.</p></div>
+          <div class="rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-right"><div class="text-xs font-black uppercase tracking-wider text-cyan-300">Approved Slots</div><div class="mt-1 text-2xl font-black text-white">{{ spotifyAccessSummary.approved }} / {{ spotifyAccessSummary.development_limit }}</div><div class="text-xs text-amber-300">{{ spotifyAccessSummary.pending }} pending</div></div>
+        </div>
+        <div v-if="!spotifyAccessRequests.length" class="p-8 text-slate-500">No Spotify access requests yet.</div>
+        <div v-else class="divide-y divide-white/10">
+          <div v-for="r in spotifyAccessRequests" :key="r.host_id" class="grid gap-4 p-5 lg:grid-cols-[1.2fr_1.2fr_.7fr_auto] lg:items-center">
+            <div><div class="font-black text-white">{{ r.display_name || r.email }}</div><div class="text-sm text-slate-500">KC account: {{ r.email }}</div></div>
+            <div><div class="text-xs uppercase tracking-wider text-slate-600">Spotify email</div><div class="font-bold text-cyan-300">{{ r.spotify_email || 'Not supplied' }}</div></div>
+            <div><span class="rounded-full border px-3 py-1 text-xs font-black uppercase" :class="r.status==='approved'?'border-green-500/30 bg-green-500/10 text-green-400':r.status==='pending'?'border-amber-500/30 bg-amber-500/10 text-amber-300':'border-red-500/30 bg-red-500/10 text-red-300'">{{ r.status }}</span><div class="mt-2 text-xs text-slate-600">{{ r.connected ? 'Spotify connected' : 'Not connected' }}</div></div>
+            <div class="flex flex-wrap gap-2 lg:justify-end"><button v-if="r.status!=='approved'" class="neon-btn-cyan text-sm" :disabled="busy===`spotify-${r.host_id}`" @click="reviewSpotifyAccess(r,'approved')">Approve</button><button v-if="r.status!=='denied'" class="neon-btn-ghost text-sm" :disabled="busy===`spotify-${r.host_id}`" @click="reviewSpotifyAccess(r,'denied')">Deny</button></div>
           </div>
         </div>
       </section>

@@ -1,9 +1,24 @@
 import crypto from 'node:crypto'
 import { requireHostUser } from '../../utils/host'
+import { useAdminSupabase } from '../../utils/adminSupabase'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
-  const user = await requireHostUser(event)
+  const user:any = await requireHostUser(event)
+  const db = useAdminSupabase()
+  const { data: access } = await db.from('spotify_host_access').select('status,spotify_email').eq('host_id', user.id).maybeSingle()
+  const { data: existingConnection } = await db.from('spotify_connections').select('id').eq('host_id', user.id).maybeSingle()
+
+  // Existing working connections remain reconnectable for backward compatibility.
+  if (!existingConnection && access?.status !== 'approved') {
+    throw createError({
+      statusCode: 403,
+      statusMessage: access?.status === 'pending'
+        ? 'Spotify host access is awaiting Super Admin approval'
+        : 'Request Spotify host access before connecting your account'
+    })
+  }
+
   const state = crypto.randomBytes(20).toString('hex')
 
   const requestUrl = getRequestURL(event)
