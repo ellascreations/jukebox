@@ -6,6 +6,17 @@ export default defineEventHandler(async (event) => {
   const user = await requireHostUser(event)
   const state = crypto.randomBytes(20).toString('hex')
 
+  const requestUrl = getRequestURL(event)
+  const fallbackRedirect = `${requestUrl.protocol}//${requestUrl.host}/api/spotify/callback`
+  const redirectUri = String(config.spotifyRedirectUri || fallbackRedirect).trim()
+
+  if (!config.spotifyClientId || !config.spotifyClientSecret) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Spotify is not configured on this server'
+    })
+  }
+
   setCookie(event, 'spotify_oauth_state', state, {
     httpOnly: true,
     sameSite: 'lax',
@@ -13,6 +24,7 @@ export default defineEventHandler(async (event) => {
     maxAge: 600,
     path: '/'
   })
+
   setCookie(event, 'spotify_oauth_host', user.id, {
     httpOnly: true,
     sameSite: 'lax',
@@ -21,11 +33,27 @@ export default defineEventHandler(async (event) => {
     path: '/'
   })
 
-  const scopes = ['user-read-private','user-read-email','user-read-playback-state','user-modify-playback-state']
+  // Store the exact redirect URI used to start OAuth so the callback uses
+  // precisely the same value during the token exchange.
+  setCookie(event, 'spotify_oauth_redirect', redirectUri, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 600,
+    path: '/'
+  })
+
+  const scopes = [
+    'user-read-private',
+    'user-read-email',
+    'user-read-playback-state',
+    'user-modify-playback-state'
+  ]
+
   const params = new URLSearchParams({
-    client_id: config.spotifyClientId,
+    client_id: String(config.spotifyClientId),
     response_type: 'code',
-    redirect_uri: config.spotifyRedirectUri,
+    redirect_uri: redirectUri,
     state,
     scope: scopes.join(' ')
   })

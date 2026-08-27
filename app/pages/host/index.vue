@@ -7,7 +7,21 @@ async function load(){try{status.value=await hostFetch('/api/host/status'); cons
 async function connectSpotify(){connecting.value=true; error.value=''; try{const result:any=await hostFetch('/api/spotify/login'); window.location.assign(result.url)}catch(e:any){error.value=e?.data?.statusMessage||e?.message||'Could not start Spotify connection'; connecting.value=false}}
 async function createParty(){creating.value=true; error.value=''; try{const p:any=await hostFetch('/api/parties/create',{method:'POST',body:{name:name.value,max_requests_per_guest:maxRequests.value,queue_mode:queueMode.value}}); await navigateTo(`/host/${p.id}?code=${p.code}`)}catch(e:any){error.value=e?.data?.statusMessage||e?.message||'Could not create party'}finally{creating.value=false}}
 async function signOut(){await supabase.auth.signOut(); await navigateTo('/')}
-onMounted(async()=>{if(route.query.spotify==='not-premium') error.value='That Spotify account is not Premium. Please connect a Spotify Premium account.'; await load()})
+onMounted(async()=>{
+  const spotifyResult = String(route.query.spotify || '')
+  if (spotifyResult === 'connected') error.value = ''
+  if (spotifyResult === 'not-premium') error.value = 'That Spotify account is not Premium. Please connect a Spotify Premium account.'
+  if (spotifyResult === 'forbidden') error.value = 'Spotify connected, but Spotify returned 403 Forbidden. If this app is in Development Mode, add this Spotify account under Spotify Developer Dashboard → Users Management, then connect again.'
+  if (spotifyResult === 'state-error') error.value = 'Spotify connection could not be verified because the OAuth session/state cookie was missing or expired. Please click Connect Spotify again.'
+  if (spotifyResult === 'token-error') {
+    const detail = route.query.reason ? ` (${String(route.query.reason)})` : ''
+    error.value = `Spotify rejected the OAuth token exchange${detail}. Check that NUXT_SPOTIFY_REDIRECT_URI exactly matches the Redirect URI configured in the Spotify Developer Dashboard.`
+  }
+  if (spotifyResult === 'profile-error') error.value = 'Spotify login completed, but KC Jukebox could not read the Spotify account profile. Please try connecting again.'
+  if (spotifyResult === 'save-error') error.value = 'Spotify login succeeded, but KC Jukebox could not save the Spotify connection. Please contact the administrator.'
+  if (spotifyResult === 'denied') error.value = 'Spotify access was cancelled or denied.'
+  await load()
+})
 </script>
 <template>
 <main class="neon-page">
