@@ -268,151 +268,154 @@ onBeforeUnmount(() => clearInterval(timer))
         </div>
       </section>
 
-      <div v-else class="kc-content">
-        <section id="now-playing" class="kc-now-card">
-          <div class="kc-section-label">NOW PLAYING</div>
-          <div class="kc-now-layout">
-            <div class="kc-album-wrap">
-              <img v-if="playback?.item?.image" :src="playback.item.image" class="kc-album-art" alt="Album artwork" />
-              <div v-else class="kc-album-placeholder">♫</div>
-            </div>
-
-            <div class="min-w-0 flex-1">
-              <h2 class="truncate text-3xl font-black sm:text-4xl">
-                {{ playback?.item?.name || 'Start Spotify playback' }}
-              </h2>
-              <p class="mt-2 truncate text-lg text-slate-400 sm:text-xl">
-                {{ playback?.item?.artist || 'Choose a Spotify Connect device' }}
-              </p>
-
-              <div v-if="playback?.device" class="mt-4 flex items-center gap-2 text-sm text-green-400">
-                <span>▣</span>
-                <span>Playing on {{ playback.device.name }}</span>
+      <div v-else class="kc-fourcol-content">
+        <div class="kc-main-column">
+          <section id="now-playing" class="kc-now-card">
+            <div class="kc-section-label">NOW PLAYING</div>
+            <div class="kc-now-layout">
+              <div class="kc-album-wrap">
+                <img v-if="playback?.item?.image" :src="playback.item.image" class="kc-album-art" alt="Album artwork" />
+                <div v-else class="kc-album-placeholder">♫</div>
               </div>
-
-              <div class="mt-7">
-                <div class="h-1.5 overflow-hidden rounded-full bg-slate-800">
-                  <div class="kc-progress" :style="{ width: `${progressPercent}%` }"></div>
-                </div>
-                <div class="mt-2 flex justify-between text-xs text-slate-500">
-                  <span>{{ formatTime(playback?.progress_ms || 0) }}</span>
-                  <span>{{ formatTime(playback?.item?.duration_ms || 0) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <aside class="kc-control-card">
-          <div class="kc-control-icon">⏭</div>
-          <h2 class="mt-3 text-xl font-black">Host Playback</h2>
-          <p class="mt-2 text-sm leading-6 text-slate-500">
-            Spotify controls the active device and audio. Skip moves to the next Spotify track.
-          </p>
-          <button @click="skip" class="kc-skip-btn mt-6">Skip Track →</button>
-
-          <div v-if="playback?.device" class="kc-device-box mt-5">
-            <div class="text-xs font-bold uppercase tracking-widest text-slate-500">Active device</div>
-            <div class="mt-1 font-bold text-slate-200">{{ playback.device.name }}</div>
-            <div v-if="playback.device.volume_percent != null" class="mt-1 text-sm text-slate-500">Volume {{ playback.device.volume_percent }}%</div>
-          </div>
-        </aside>
-
-        <section id="guest-queue" class="kc-queue-card">
-          <div class="kc-queue-head">
-            <div>
-              <div class="kc-section-label purple">GUEST QUEUE</div>
-              <p class="mt-1 text-sm text-slate-500">Highest votes first</p>
-            </div>
-            <div class="kc-mode-pill" :class="party?.queue_mode === 'automatic' ? 'automatic' : 'approval'">
-              {{ party?.queue_mode === 'automatic' ? '⚡ AUTOMATIC MODE' : '✓ APPROVAL MODE' }}
-            </div>
-          </div>
-
-          <div class="kc-queue-list">
-            <article v-for="request in requests" :key="request.id" class="kc-queue-row">
-              <div class="kc-vote-count">{{ request.votes }}</div>
-              <img v-if="request.image_url" :src="request.image_url" class="kc-track-thumb" alt="" />
-              <div v-else class="kc-track-thumb kc-track-placeholder">♫</div>
 
               <div class="min-w-0 flex-1">
-                <div class="truncate text-base font-black sm:text-lg">{{ request.track_name }}</div>
-                <div class="truncate text-sm text-slate-400">{{ request.artist_name }}</div>
-                <div class="mt-1 truncate text-xs text-slate-600">Requested by {{ request.requested_by }}</div>
-              </div>
+                <h2 class="truncate text-3xl font-black sm:text-4xl">
+                  {{ playback?.item?.name || 'Start Spotify playback' }}
+                </h2>
+                <p class="mt-2 truncate text-lg text-slate-400 sm:text-xl">
+                  {{ playback?.item?.artist || 'Choose a Spotify Connect device' }}
+                </p>
 
-              <div class="kc-row-action">
-                <span v-if="request.status === 'playing'" class="kc-status playing">Now Playing</span>
-                <span v-else-if="request.status === 'sent_to_spotify'" class="kc-status queued">Queued in Spotify</span>
-                <button
-                  v-else-if="party?.queue_mode !== 'automatic'"
-                  @click="sendToSpotify(request)"
-                  :disabled="busy === request.id"
-                  class="kc-add-btn"
-                >
-                  {{ busy === request.id ? 'Adding…' : 'Add Next' }}
-                </button>
-                <button
-                  v-else
-                  @click="sendToSpotify(request)"
-                  :disabled="busy === request.id"
-                  class="kc-retry-btn"
-                >
-                  {{ busy === request.id ? 'Retrying…' : 'Retry Spotify' }}
-                </button>
-              </div>
-            </article>
+                <div v-if="playback?.device" class="mt-4 flex items-center gap-2 text-sm text-green-400">
+                  <span>▣</span>
+                  <span>Playing on {{ playback.device.name }}</span>
+                </div>
 
-            <div v-if="!requests.length" class="p-12 text-center text-slate-600">
-              Guest requests will appear here.
-            </div>
-          </div>
-        </section>
-
-        <aside id="party-code" class="kc-party-card">
-          <div class="kc-section-label cyan">REQUEST A SONG</div>
-          <p class="mt-2 text-sm text-slate-500">Guests scan this code with their phone.</p>
-          <img v-if="qr" :src="qr" class="kc-qr" alt="Party QR code" />
-          <div class="kc-big-code">{{ code }}</div>
-          <div class="mt-4 rounded-xl border border-white/10 bg-black/20 p-3 text-center text-xs text-slate-500">
-            {{ party?.queue_mode === 'automatic' ? 'Guest requests queue automatically in Spotify.' : 'Guest requests wait for host approval.' }}
-          </div>
-        </aside>
-      </div>
-
-
-      <section v-if="!isEnded" class="mx-4 mb-6 rounded-2xl border border-cyan-500/20 bg-slate-950/50 p-5 shadow-[0_0_28px_rgba(34,211,238,0.08)] lg:mx-8">
-        <div class="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div class="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">CONNECTED GUESTS</div>
-            <h2 class="mt-1 text-xl font-black text-white">{{ onlineGuests }} online now</h2>
-          </div>
-          <div class="text-xs text-slate-500">Online = active within 30 seconds</div>
-        </div>
-
-        <div v-if="guests.length" class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <article v-for="guest in guests" :key="guest.id" class="rounded-xl border border-white/10 bg-black/20 p-4">
-            <div class="flex items-center justify-between gap-3">
-              <div class="min-w-0 flex items-center gap-3">
-                <span class="h-3 w-3 shrink-0 rounded-full" :class="guest.online ? 'bg-green-400 shadow-[0_0_12px_rgba(74,222,128,.9)]' : 'bg-slate-600'"></span>
-                <div class="min-w-0">
-                  <div class="truncate font-black text-white">{{ guest.display_name }}</div>
-                  <div class="mt-1 text-xs" :class="guest.online ? 'text-green-300' : 'text-slate-500'">
-                    {{ guest.online ? 'Online' : `Last active ${formatLastSeen(guest.last_seen_at)}` }}
+                <div class="mt-7">
+                  <div class="h-1.5 overflow-hidden rounded-full bg-slate-800">
+                    <div class="kc-progress" :style="{ width: `${progressPercent}%` }"></div>
+                  </div>
+                  <div class="mt-2 flex justify-between text-xs text-slate-500">
+                    <span>{{ formatTime(playback?.progress_ms || 0) }}</span>
+                    <span>{{ formatTime(playback?.item?.duration_ms || 0) }}</span>
                   </div>
                 </div>
               </div>
-              <div class="shrink-0 rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-xs font-black text-violet-300">
-                {{ guest.request_count }} req
+            </div>
+          </section>
+
+          <section id="guest-queue" class="kc-queue-card">
+            <div class="kc-queue-head">
+              <div>
+                <div class="kc-section-label purple">GUEST QUEUE</div>
+                <p class="mt-1 text-sm text-slate-500">Highest votes first</p>
+              </div>
+              <div class="kc-mode-pill" :class="party?.queue_mode === 'automatic' ? 'automatic' : 'approval'">
+                {{ party?.queue_mode === 'automatic' ? '⚡ AUTOMATIC MODE' : '✓ APPROVAL MODE' }}
               </div>
             </div>
-          </article>
+
+            <div class="kc-queue-list">
+              <article v-for="request in requests" :key="request.id" class="kc-queue-row">
+                <div class="kc-vote-count">{{ request.votes }}</div>
+                <img v-if="request.image_url" :src="request.image_url" class="kc-track-thumb" alt="" />
+                <div v-else class="kc-track-thumb kc-track-placeholder">♫</div>
+
+                <div class="min-w-0 flex-1">
+                  <div class="truncate text-base font-black sm:text-lg">{{ request.track_name }}</div>
+                  <div class="truncate text-sm text-slate-400">{{ request.artist_name }}</div>
+                  <div class="mt-1 truncate text-xs text-slate-600">Requested by {{ request.requested_by }}</div>
+                </div>
+
+                <div class="kc-row-action">
+                  <span v-if="request.status === 'playing'" class="kc-status playing">Now Playing</span>
+                  <span v-else-if="request.status === 'sent_to_spotify'" class="kc-status queued">Queued in Spotify</span>
+                  <button
+                    v-else-if="party?.queue_mode !== 'automatic'"
+                    @click="sendToSpotify(request)"
+                    :disabled="busy === request.id"
+                    class="kc-add-btn"
+                  >
+                    {{ busy === request.id ? 'Adding…' : 'Add Next' }}
+                  </button>
+                  <button
+                    v-else
+                    @click="sendToSpotify(request)"
+                    :disabled="busy === request.id"
+                    class="kc-retry-btn"
+                  >
+                    {{ busy === request.id ? 'Retrying…' : 'Retry Spotify' }}
+                  </button>
+                </div>
+              </article>
+
+              <div v-if="!requests.length" class="p-12 text-center text-slate-600">
+                Guest requests will appear here.
+              </div>
+            </div>
+          </section>
         </div>
 
-        <div v-else class="mt-4 rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-600">
-          No guests have joined this party yet.
+        <div class="kc-tools-column">
+          <aside class="kc-control-card">
+            <div class="kc-control-icon">⏭</div>
+            <h2 class="mt-3 text-xl font-black">Host Playback</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-500">
+              Spotify controls the active device and audio. Skip moves to the next Spotify track.
+            </p>
+            <button @click="skip" class="kc-skip-btn mt-6">Skip Track →</button>
+
+            <div v-if="playback?.device" class="kc-device-box mt-5">
+              <div class="text-xs font-bold uppercase tracking-widest text-slate-500">Active device</div>
+              <div class="mt-1 font-bold text-slate-200">{{ playback.device.name }}</div>
+              <div v-if="playback.device.volume_percent != null" class="mt-1 text-sm text-slate-500">Volume {{ playback.device.volume_percent }}%</div>
+            </div>
+          </aside>
+
+          <aside id="party-code" class="kc-party-card">
+            <div class="kc-section-label cyan">REQUEST A SONG</div>
+            <p class="mt-2 text-sm text-slate-500">Guests scan this code with their phone.</p>
+            <img v-if="qr" :src="qr" class="kc-qr" alt="Party QR code" />
+            <div class="kc-big-code">{{ code }}</div>
+            <div class="mt-4 rounded-xl border border-white/10 bg-black/20 p-3 text-center text-xs text-slate-500">
+              {{ party?.queue_mode === 'automatic' ? 'Guest requests queue automatically in Spotify.' : 'Guest requests wait for host approval.' }}
+            </div>
+          </aside>
         </div>
-      </section>
+
+        <aside id="connected-guests" class="kc-guests-column kc-guests-card">
+          <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <div class="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">CONNECTED GUESTS</div>
+              <h2 class="mt-1 text-xl font-black text-white">{{ onlineGuests }} online now</h2>
+            </div>
+            <div class="text-xs text-slate-500">Live · online = active within 30 seconds</div>
+          </div>
+
+          <div v-if="guests.length" class="mt-4 space-y-3">
+            <article v-for="guest in guests" :key="guest.id" class="rounded-xl border border-white/10 bg-black/20 p-4">
+              <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0 flex items-center gap-3">
+                  <span class="h-3 w-3 shrink-0 rounded-full" :class="guest.online ? 'bg-green-400 shadow-[0_0_12px_rgba(74,222,128,.9)]' : 'bg-slate-600'"></span>
+                  <div class="min-w-0">
+                    <div class="truncate font-black text-white">{{ guest.display_name }}</div>
+                    <div class="mt-1 text-xs" :class="guest.online ? 'text-green-300' : 'text-slate-500'">
+                      {{ guest.online ? 'Online now' : `Last active ${formatLastSeen(guest.last_seen_at)}` }}
+                    </div>
+                  </div>
+                </div>
+                <div class="shrink-0 rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-xs font-black text-violet-300">
+                  {{ guest.request_count }} req
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div v-else class="mt-4 rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-600">
+            No guests have joined this party yet.
+          </div>
+        </aside>
+      </div>
 
       <section v-if="!isEnded" class="mx-4 mb-8 rounded-2xl border border-red-500/40 bg-red-950/20 p-5 shadow-[0_0_28px_rgba(239,68,68,0.12)] lg:mx-8">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
