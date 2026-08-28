@@ -18,7 +18,30 @@ const playbackProgress = computed(() => {
   return Math.min(100, Math.max(0, (progress / duration) * 100))
 })
 const partyEnded = computed(() => data.value?.party?.status === 'ended')
+const partyScheduled = computed(() => data.value?.party?.status === 'scheduled')
 const partyActive = computed(() => data.value?.party?.status === 'active')
+
+const nowMs = ref(Date.now())
+const activationAtMs = computed(() => {
+  const startsAt = data.value?.party?.starts_at
+  if (!startsAt) return 0
+  return new Date(startsAt).getTime() - (15 * 60 * 1000)
+})
+const countdownMs = computed(() => Math.max(0, activationAtMs.value - nowMs.value))
+const countdownText = computed(() => {
+  const total = Math.ceil(countdownMs.value / 1000)
+  const days = Math.floor(total / 86400)
+  const hours = Math.floor((total % 86400) / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  const seconds = total % 60
+  if (days > 0) return `${days}d ${hours}h ${minutes}m ${seconds}s`
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`
+  return `${minutes}m ${seconds}s`
+})
+const activationTimeText = computed(() => {
+  if (!activationAtMs.value) return ''
+  return new Date(activationAtMs.value).toLocaleString()
+})
 
 watch(partyEnded, (ended) => {
   if (ended) {
@@ -29,6 +52,7 @@ watch(partyEnded, (ended) => {
 
 let timer: any
 let heartbeatTimer: any
+let countdownTimer: any
 
 async function heartbeat() {
   if (!joined.value || !guestToken.value || !partyActive.value) return
@@ -42,14 +66,20 @@ async function heartbeat() {
 
 onMounted(() => {
   heartbeat()
-  timer = setInterval(() => {
-    refresh()
-    refreshPlayback()
+  nowMs.value = Date.now()
+  timer = setInterval(async () => {
+    nowMs.value = Date.now()
+    await refresh()
+    if (partyActive.value) await refreshPlayback()
   }, 3000)
+  countdownTimer = setInterval(() => {
+    nowMs.value = Date.now()
+  }, 1000)
   heartbeatTimer = setInterval(heartbeat, 10000)
 })
 onBeforeUnmount(() => {
   clearInterval(timer)
+  clearInterval(countdownTimer)
   clearInterval(heartbeatTimer)
 })
 
@@ -119,6 +149,7 @@ async function vote(id: string) {
           <div class="neon-code mt-2">{{ data.party.code }}</div>
           <h1 class="mt-3 text-2xl font-black">{{ data.party.name }}</h1>
           <p v-if="partyActive" class="mt-1 text-sm text-slate-500">Search, request and vote for what plays next.</p>
+          <p v-else-if="partyScheduled" class="mt-1 font-bold text-cyan-300">Waiting room open — this party has not started yet.</p>
           <p v-else class="mt-1 font-bold text-red-300">This party has ended.</p>
         </div>
       </header>
@@ -132,18 +163,44 @@ async function vote(id: string) {
         <NuxtLink to="/" class="neon-btn mt-6 inline-block">Return to KC Jukebox</NuxtLink>
       </section>
 
+      <section v-else-if="partyScheduled && joined" class="neon-card mx-auto mt-7 max-w-2xl overflow-hidden p-6 text-center sm:p-9">
+        <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-cyan-400/30 bg-cyan-400/10 text-4xl text-cyan-300 shadow-[0_0_30px_rgba(34,211,238,.18)]">♫</div>
+        <div class="neon-kicker mt-6 text-cyan-300">You're In</div>
+        <h2 class="neon-title mt-2 text-3xl sm:text-4xl">Party Starts Soon</h2>
+        <p class="mx-auto mt-3 max-w-lg leading-7 text-slate-400">
+          You're already joined. Song search, requests and voting will unlock automatically when the party becomes active.
+        </p>
+
+        <div class="mx-auto mt-7 max-w-md rounded-2xl border border-fuchsia-500/25 bg-slate-950/60 p-6">
+          <div class="text-xs font-black uppercase tracking-[.22em] text-slate-500">Party opens in</div>
+          <div class="mt-3 font-mono text-4xl font-black tracking-tight text-white sm:text-5xl">{{ countdownText }}</div>
+          <div v-if="activationTimeText" class="mt-3 text-sm text-cyan-300">{{ activationTimeText }}</div>
+          <div class="mt-2 text-xs text-slate-600">Requests open 15 minutes before the scheduled start time.</div>
+        </div>
+
+        <div class="mt-6 rounded-xl border border-violet-500/20 bg-violet-500/5 px-4 py-3 text-sm text-slate-400">
+          Keep this page open. KC Jukebox will switch to the live party automatically.
+        </div>
+      </section>
+
       <section v-else-if="!joined" class="neon-card mx-auto mt-7 max-w-lg p-6 sm:p-8">
         <div class="text-center">
           <div class="neon-cyan text-4xl">♫</div>
-          <h2 class="neon-title mt-3 text-2xl">Join the Party</h2>
-          <p class="mt-2 text-sm text-slate-500">Choose a name so everyone can see who requested each track.</p>
+          <h2 class="neon-title mt-3 text-2xl">{{ partyScheduled ? 'Join the Waiting Room' : 'Join the Party' }}</h2>
+          <p class="mt-2 text-sm text-slate-500">
+            {{ partyScheduled ? 'Choose a name now. You can wait here until song requests automatically open.' : 'Choose a name so everyone can see who requested each track.' }}
+          </p>
+          <div v-if="partyScheduled" class="mt-4 rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-3">
+            <div class="text-xs font-black uppercase tracking-[.18em] text-cyan-400">Opens in</div>
+            <div class="mt-1 font-mono text-2xl font-black text-white">{{ countdownText }}</div>
+          </div>
         </div>
         <input v-model="guestName" @keyup.enter="join" class="neon-input mt-6 text-center" maxlength="40" placeholder="Your name">
         <button @click="join" :disabled="!guestName.trim()" class="neon-btn mt-3 w-full">Join Party</button>
         <div v-if="message" class="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">{{ message }}</div>
       </section>
 
-      <template v-else>
+      <template v-else-if="partyActive">
         <section class="neon-card mt-7 p-4 sm:p-5">
           <div class="flex items-center gap-4">
             <div class="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-cyan-400/20 bg-slate-950 sm:h-20 sm:w-20">
