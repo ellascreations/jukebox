@@ -142,21 +142,30 @@ async function vote(id: string) {
 <template>
   <main class="neon-page min-h-screen">
     <div class="mx-auto max-w-7xl px-4 py-6 sm:py-8">
-      <header>
-        <div class="flex justify-center">
-          <img src="/kc-jukebox-logo.png" alt="KC Jukebox" class="neon-logo w-full max-w-[240px]">
-        </div>
+      <header class="neon-card mx-auto w-full max-w-5xl p-5 sm:p-7">
+        <div class="grid items-center gap-6 md:grid-cols-[280px_1fr] md:gap-10">
+          <div class="flex justify-center md:justify-end">
+            <img
+              src="/kc-jukebox-logo.png"
+              alt="KC Jukebox"
+              class="neon-logo w-full max-w-[240px] sm:max-w-[260px]"
+            >
+          </div>
 
-        <div
-          v-if="data?.party"
-          class="neon-card mx-auto mt-3 w-full max-w-5xl px-5 py-4 text-center sm:px-8 sm:py-5"
-        >
-          <div class="neon-kicker">Party Code</div>
-          <div class="neon-code mt-2">{{ data.party.code }}</div>
-          <h1 class="mt-3 text-2xl font-black sm:text-3xl">{{ data.party.name }}</h1>
-          <p v-if="partyActive" class="mt-2 text-sm text-slate-500">Search, request and vote for what plays next.</p>
-          <p v-else-if="partyScheduled" class="mt-2 font-bold text-cyan-300">Waiting room open — this party has not started yet.</p>
-          <p v-else class="mt-2 font-bold text-red-300">This party has ended.</p>
+          <div v-if="data?.party" class="text-center md:text-left">
+            <div class="neon-kicker">Party Code</div>
+            <div class="neon-code mt-2">{{ data.party.code }}</div>
+            <h1 class="mt-3 text-2xl font-black sm:text-3xl">{{ data.party.name }}</h1>
+            <p v-if="partyActive" class="mt-2 text-sm text-slate-500">
+              Search, request and vote for what plays next.
+            </p>
+            <p v-else-if="partyScheduled" class="mt-2 font-bold text-cyan-300">
+              Waiting room open — this party has not started yet.
+            </p>
+            <p v-else class="mt-2 font-bold text-red-300">
+              This party has ended.
+            </p>
+          </div>
         </div>
       </header>
 
