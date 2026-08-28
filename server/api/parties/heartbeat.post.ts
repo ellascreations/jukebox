@@ -1,4 +1,5 @@
 import { useAdminSupabase } from '../../utils/adminSupabase'
+import { syncPartyLifecycle } from '../../utils/partyLifecycle'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -21,11 +22,13 @@ export default defineEventHandler(async (event) => {
 
   const { data: party } = await db
     .from('parties')
-    .select('id,status')
+    .select('id,status,starts_at,finishes_at')
     .eq('id', guest.party_id)
     .maybeSingle()
 
-  if (!party || party.status !== 'active') {
+  const syncedParty = party ? await syncPartyLifecycle(party) : null
+
+  if (!syncedParty || syncedParty.status !== 'active') {
     throw createError({ statusCode: 410, statusMessage: 'This party is no longer active' })
   }
 

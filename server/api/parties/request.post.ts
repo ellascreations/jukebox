@@ -1,4 +1,5 @@
 import { useAdminSupabase } from '../../utils/adminSupabase'
+import { syncPartyLifecycle } from '../../utils/partyLifecycle'
 import { spotifyFetch } from '../../utils/spotify'
 
 export default defineEventHandler(async (event) => {
@@ -15,11 +16,13 @@ export default defineEventHandler(async (event) => {
 
   const { data: party } = await db
     .from('parties')
-    .select('max_requests_per_guest,status,queue_mode,spotify_connection_id')
+    .select('id,max_requests_per_guest,status,queue_mode,spotify_connection_id,starts_at,finishes_at')
     .eq('id', guest.party_id)
     .single()
 
-  if (!party || party.status !== 'active') {
+  const syncedParty = party ? await syncPartyLifecycle(party) : null
+
+  if (!syncedParty || syncedParty.status !== 'active') {
     throw createError({ statusCode: 400, statusMessage: 'Party is not active' })
   }
 

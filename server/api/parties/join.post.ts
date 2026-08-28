@@ -1,10 +1,12 @@
 import crypto from 'node:crypto'
 import { useAdminSupabase } from '../../utils/adminSupabase'
+import { syncPartyLifecycle } from '../../utils/partyLifecycle'
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const db = useAdminSupabase()
-  const { data: party } = await db.from('parties').select('id,code,status').eq('code', String(body.code || '').toUpperCase()).maybeSingle()
-  if (!party || party.status !== 'active') throw createError({ statusCode: 404, statusMessage: 'Active party not found' })
+  const { data: party } = await db.from('parties').select('id,code,status,starts_at,finishes_at').eq('code', String(body.code || '').toUpperCase()).maybeSingle()
+  const syncedParty = party ? await syncPartyLifecycle(party) : null
+  if (!syncedParty || syncedParty.status !== 'active') throw createError({ statusCode: 404, statusMessage: 'Active party not found' })
   const guestToken = crypto.randomBytes(24).toString('hex')
   const now = new Date().toISOString()
   const { data, error } = await db.from('party_guests').insert({ party_id: party.id, display_name: String(body.display_name || 'Guest').slice(0,40), guest_token: guestToken, last_seen_at: now }).select('id,display_name,guest_token').single()

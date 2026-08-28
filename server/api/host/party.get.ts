@@ -1,5 +1,6 @@
 import { requireHostUser } from '../../utils/host'
 import { useAdminSupabase } from '../../utils/adminSupabase'
+import { syncPartyLifecycle } from '../../utils/partyLifecycle'
 
 export default defineEventHandler(async (event) => {
   const host = await requireHostUser(event)
@@ -22,5 +23,5 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'This party belongs to another host account' })
   }
 
-  return { party }
+  return { party: await syncPartyLifecycle(party) }
 })

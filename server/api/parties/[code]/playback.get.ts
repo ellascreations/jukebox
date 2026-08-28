@@ -1,4 +1,5 @@
 import { useAdminSupabase } from '../../../utils/adminSupabase'
+import { syncPartyLifecycle } from '../../../utils/partyLifecycle'
 import { spotifyFetch } from '../../../utils/spotify'
 
 export default defineEventHandler(async (event) => {
@@ -10,7 +11,7 @@ export default defineEventHandler(async (event) => {
   const db = useAdminSupabase()
   const { data: party, error } = await db
     .from('parties')
-    .select('id,status,spotify_connection_id')
+    .select('id,status,spotify_connection_id,starts_at,finishes_at')
     .eq('code', code)
     .maybeSingle()
 
@@ -18,7 +19,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Party not found' })
   }
 
-  if (party.status !== 'active' || !party.spotify_connection_id) {
+  const syncedParty = await syncPartyLifecycle(party)
+  if (syncedParty.status !== 'active' || !party.spotify_connection_id) {
     return { active: false, is_playing: false, progress_ms: 0, item: null }
   }
 

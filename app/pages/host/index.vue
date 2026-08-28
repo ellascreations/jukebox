@@ -1,12 +1,12 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'host-auth' })
 const supabase = useSupabaseClient(); const user = useSupabaseUser(); const { hostFetch } = useHostApi()
-const status=ref<any>(null); const parties=ref<any[]>([]); const name=ref(''); const maxRequests=ref(3); const queueMode=ref<'automatic'|'approval'>('automatic')
+const status=ref<any>(null); const parties=ref<any[]>([]); const name=ref(''); const maxRequests=ref(3); const queueMode=ref<'automatic'|'approval'>('automatic'); const startsAt=ref(''); const finishesAt=ref('')
 const creating=ref(false); const connecting=ref(false); const requestingSpotifyAccess=ref(false); const spotifyAccessEmail=ref(''); const error=ref(''); const route=useRoute()
 async function load(){try{status.value=await hostFetch('/api/host/status'); spotifyAccessEmail.value=status.value?.spotifyAccess?.spotify_email||user.value?.email||''; const data:any=await hostFetch('/api/host/parties'); parties.value=data.parties||[]}catch(e:any){if(e?.statusCode!==401) error.value=e?.data?.statusMessage||e?.message||'Could not load host account'}}
 async function connectSpotify(){connecting.value=true; error.value=''; try{const result:any=await hostFetch('/api/spotify/login'); window.location.assign(result.url)}catch(e:any){error.value=e?.data?.statusMessage||e?.message||'Could not start Spotify connection'; connecting.value=false}}
 async function requestSpotifyAccess(){requestingSpotifyAccess.value=true; error.value=''; try{await hostFetch('/api/host/spotify-access',{method:'POST',body:{spotify_email:spotifyAccessEmail.value}}); await load()}catch(e:any){error.value=e?.data?.statusMessage||e?.message||'Could not request Spotify access'}finally{requestingSpotifyAccess.value=false}}
-async function createParty(){creating.value=true; error.value=''; try{const p:any=await hostFetch('/api/parties/create',{method:'POST',body:{name:name.value,max_requests_per_guest:maxRequests.value,queue_mode:queueMode.value}}); await navigateTo(`/host/${p.id}?code=${p.code}`)}catch(e:any){error.value=e?.data?.statusMessage||e?.message||'Could not create party'}finally{creating.value=false}}
+async function createParty(){creating.value=true; error.value=''; try{const p:any=await hostFetch('/api/parties/create',{method:'POST',body:{name:name.value,max_requests_per_guest:maxRequests.value,queue_mode:queueMode.value,starts_at:new Date(startsAt.value).toISOString(),finishes_at:new Date(finishesAt.value).toISOString()}}); await navigateTo(`/host/${p.id}?code=${p.code}`)}catch(e:any){error.value=e?.data?.statusMessage||e?.message||'Could not create party'}finally{creating.value=false}}
 async function signOut(){await supabase.auth.signOut(); await navigateTo('/')}
 onMounted(async()=>{
   const spotifyResult = String(route.query.spotify || '')
@@ -62,9 +62,9 @@ onMounted(async()=>{
         <p v-if="!status?.connected" class="mt-4 text-slate-500">Connect Spotify first to start hosting.</p>
         <div v-else class="mt-5 space-y-4">
           <div><label class="mb-2 block text-sm font-bold text-slate-300">Party name</label><input v-model="name" class="neon-input" placeholder="Saturday Night Party"></div>
-          <div><label class="mb-2 block text-sm font-bold text-slate-300">Maximum active requests per guest</label><input v-model.number="maxRequests" class="neon-input" min="1" max="10" type="number"></div>
+          <div><label class="mb-2 block text-sm font-bold text-slate-300">Maximum active requests per guest</label><input v-model.number="maxRequests" class="neon-input" min="1" max="10" type="number"></div><div class="grid gap-4 sm:grid-cols-2"><div><label class="mb-2 block text-sm font-bold text-slate-300">Party starts</label><input v-model="startsAt" class="neon-input" type="datetime-local"><p class="mt-1 text-xs text-slate-600">Activates 15 minutes before start.</p></div><div><label class="mb-2 block text-sm font-bold text-slate-300">Party finishes</label><input v-model="finishesAt" class="neon-input" type="datetime-local"><p class="mt-1 text-xs text-slate-600">Deactivates 1 hour after finish.</p></div></div>
           <div><label class="mb-2 block text-sm font-bold text-slate-300">Guest request mode</label><div class="grid gap-3 sm:grid-cols-2"><button type="button" @click="queueMode='automatic'" class="neon-mode" :class="queueMode==='automatic'?'active-auto':'inactive'"><div class="neon-cyan font-black">⚡ Automatic</div><div class="mt-1 text-sm text-slate-500">Requests go directly into Spotify.</div></button><button type="button" @click="queueMode='approval'" class="neon-mode" :class="queueMode==='approval'?'active-approval':'inactive'"><div class="neon-pink font-black">◎ Approval</div><div class="mt-1 text-sm text-slate-500">You approve each request.</div></button></div></div>
-          <button :disabled="creating||!name.trim()" @click="createParty" class="neon-btn w-full">{{creating?'Creating…':'Start Party'}}</button>
+          <button :disabled="creating||!name.trim()||!startsAt||!finishesAt" @click="createParty" class="neon-btn w-full">{{creating?'Creating…':'Schedule Party'}}</button>
         </div>
       </section>
     </div>
