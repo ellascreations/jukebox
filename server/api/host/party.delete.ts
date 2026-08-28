@@ -1,9 +1,8 @@
 import { requireHostUser } from '../../utils/host'
 import { useAdminSupabase } from '../../utils/adminSupabase'
-import { syncPartyLifecycle } from '../../utils/partyLifecycle'
 
 export default defineEventHandler(async (event) => {
-  const host = await requireHostUser(event)
+  const user = await requireHostUser(event)
   const partyId = String(getQuery(event).party_id || '')
 
   if (!partyId) {
@@ -11,17 +10,26 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useAdminSupabase()
-  const { data: party, error } = await db
+
+  const { data: party, error: lookupError } = await db
     .from('parties')
-    .select('id,name,code,status,queue_mode,max_requests_per_guest,created_at,ended_at,starts_at,finishes_at,host_id')
+    .select('id,host_id,name')
     .eq('id', partyId)
     .maybeSingle()
 
-  if (error) throw createError({ statusCode: 500, statusMessage: error.message })
+  if (lookupError) throw createError({ statusCode: 500, statusMessage: lookupError.message })
   if (!party) throw createError({ statusCode: 404, statusMessage: 'Party not found' })
-  if (party.host_id !== host.id) {
+  if (party.host_id !== user.id) {
     throw createError({ statusCode: 403, statusMessage: 'This party belongs to another host account' })
   }
 
-  return { party: await syncPartyLifecycle(party) }
+  const { error } = await db
+    .from('parties')
+    .delete()
+    .eq('id', party.id)
+    .eq('host_id', user.id)
+
+  if (error) throw createError({ statusCode: 500, statusMessage: error.message })
+
+  return { success: true, deleted_party_id: party.id, name: party.name }
 })

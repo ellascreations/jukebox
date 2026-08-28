@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const db = useAdminSupabase()
   const { data, error } = await db
     .from('parties')
-    .select('id,name,code,status,queue_mode,created_at,ended_at,starts_at,finishes_at')
+    .select('id,name,code,status,queue_mode,max_requests_per_guest,created_at,ended_at,starts_at,finishes_at')
     .eq('host_id', user.id)
     .order('created_at', { ascending: false })
     .limit(20)
