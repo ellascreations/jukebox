@@ -152,7 +152,7 @@ async function vote(id: string) {
             >
           </div>
 
-          <div v-if="data?.party" class="text-center md:text-left">
+          <div v-if="data?.party" class="flex flex-col items-center justify-center text-center">
             <div class="neon-kicker">Party Code</div>
             <div class="neon-code mt-2">{{ data.party.code }}</div>
             <h1 class="mt-3 text-2xl font-black sm:text-3xl">{{ data.party.name }}</h1>
